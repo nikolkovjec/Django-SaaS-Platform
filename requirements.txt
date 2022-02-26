@@ -1,6 +1,17 @@
-django>=1.10.1
+django>=1.10.2
 # mysql-python  # command: easy_install mysql-python
+django-mysql
 django-tastypie
+docutils
 
 django-tinymce
 django-easy-select2
+django-extensions
+django-fsm
+django-fsm-log
+pyjwt
+django-recaptcha
+
+# Documentation
+# sphinx
+# sphinx_rtd_theme

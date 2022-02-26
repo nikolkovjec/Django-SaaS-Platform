@@ -1,3 +1,6 @@
+# Copyright (C) 2016 Feedvuy (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved
+# Content in this document can not be copied and/or distributed without the express
+# permission of Gagandeep Singh.
 """feedvuy URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -13,9 +16,18 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url
+from django.conf.urls import url, include
 from django.contrib import admin
+from . import views
 
 urlpatterns = [
+    url(r'^$', views.home, name='home'),
+
+    # Accounts
+    url(r'^accounts/', include('accounts.urls')),
+
+    # Admin and staff
     url(r'^admin/', admin.site.urls),
+    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),    # Django admindocs
+    url(r'^admin/doc/(?P<filename>.*)$', views.docs, name='docs'),  # Sphinx documentation
 ]

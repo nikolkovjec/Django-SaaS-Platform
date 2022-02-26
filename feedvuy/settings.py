@@ -1,3 +1,6 @@
+# Copyright (C) 2016 Feedvuy (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved
+# Content in this document can not be copied and/or distributed without the express
+# permission of Gagandeep Singh.
 """
 Django settings for feedvuy project.
 
@@ -28,7 +31,7 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-# Application definition
+# ----- Application definition -----
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -37,6 +40,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
+    'django.contrib.admindocs',
+
+    # Packages
+    'django_mysql',
+    'django_extensions',
+    'easy_select2',
+    'django_fsm_log',
+    'captcha',
+
+    # Apps
+    'accounts',
+    'watchdog',
+
 ]
 
 MIDDLEWARE = [
@@ -47,6 +64,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'watchdog.middleware.ErrorLogMiddleware',
 ]
 
 ROOT_URLCONF = 'feedvuy.urls'
@@ -71,20 +90,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'feedvuy.wsgi.application'
 
 
-# Database
+# ----- Database -----
 # https://docs.djangoproject.com/en/1.10/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'feedvuy',
         'USER': 'root',
-        'PASSWORD': '!root@',
+        'PASSWORD': '!root1234@',
         'HOST': '127.0.0.1',
         'PORT': '3306',
+        'OPTIONS': {
+            # Tell MySQLdb to connect with 'utf8mb4' character set
+            'charset': 'utf8',   # recommended: 'utf8', or 'utf8mb4' for emoji & custom unicode characters
+        },
     }
 }
+SILENCED_SYSTEM_CHECKS = [
+    'django_mysql.W003',    # To silent 'utf8mb4' character-set warning
+]
 
-# Mongo Database
+# ----- Mongo Database -----
 # MONGO_DATABASE = {
 #     "HOST": "127.0.0.1",
 #     "PORT": 27017,
@@ -92,7 +118,7 @@ DATABASES = {
 # }
 
 
-# Password validation
+# ----- Password validation -----
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
 # AUTH_PASSWORD_VALIDATORS = [
 #     {
@@ -110,7 +136,7 @@ DATABASES = {
 # ]
 
 
-# Internationalization
+# ----- Internationalization -----
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
@@ -124,7 +150,7 @@ USE_L10N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
+# ----- Static files (CSS, JavaScript, Images) -----
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 STATIC_URL = '/static/'
 # STATIC_ROOT = os.path.join(BASE_DIR, "static")
@@ -132,12 +158,34 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
-# Media
+# ----- Media -----
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = '/media/'
 
 
-# Add SVG to Mime-Types
+# ----- Add SVG to Mime-Types -----
 import mimetypes
 mimetypes.add_type("image/svg+xml", ".svg", True)
 mimetypes.add_type("image/svg+xml", ".svgz", True)
+
+# ----- General project settings -----
+LOGIN_URL_STAFF = '/admin/login/'
+REGISTRATION_OPEN = True
+
+JWT_ALOG = 'HS256'
+JWT_SECRET_KEY = 'be16bad4-5c8b-4482-a7f0-e2ab0f70b088'
+
+# ----- Accounts -----
+VERIFICATION_EXPIRY = 15*60 # In seconds
+
+# ----- ReCaptcha -----
+RECAPTCHA_PUBLIC_KEY = '6LftyggUAAAAAG2J4egQHiCfdDIKr0VH9LmqkYmG'
+RECAPTCHA_PRIVATE_KEY = '6LftyggUAAAAAMn37jxqIe8E51c1s9LqMGhQLGMT'
+NOCAPTCHA = True
+# RECAPTCHA_PROXY = 'http://127.0.0.1:8000'
+
+# ----- Documentation -----
+DOCS_PATH = os.path.join(BASE_DIR, "docs/build/html")
+
+# ----- Watchdog -----
+WATCHDOG_ERRORLOG_ENABLED = True
