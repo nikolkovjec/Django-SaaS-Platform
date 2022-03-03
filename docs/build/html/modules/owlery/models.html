@@ -1,0 +1,307 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Models &mdash; feedvuy 1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../genindex.html"/>
+        <link rel="search" title="Search" href="../../search.html"/>
+    <link rel="top" title="feedvuy 1.0 documentation" href="../../index.html"/>
+        <link rel="up" title="Owlery" href="index.html"/>
+        <link rel="next" title="Owls" href="owls.html"/>
+        <link rel="prev" title="Owlery" href="index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> feedvuy
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../main/index.html">Main App</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../accounts/index.html">Accounts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../watchdog/index.html">Watchdog</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Owlery</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#contents">Contents</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="owls.html">Owls</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../utilities/index.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../management_commands/index.html">Management Commands</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">feedvuy</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="index.html">Owlery</a> &raquo;</li>
+      
+    <li>Models</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/modules/owlery/models.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="models">
+<h1>Models<a class="headerlink" href="#models" title="Permalink to this headline">¶</a></h1>
+<p>List of database models (MySQL &amp; MongoDb) for owlery app.</p>
+<span class="target" id="module-owlery.models"></span><dl class="class">
+<dt id="owlery.models.EmailMessage">
+<em class="property">class </em><code class="descclassname">owlery.models.</code><code class="descname">EmailMessage</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#EmailMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.EmailMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model to store all emails send to the users. This model acts like a buffer/queue which is picked
+up by an independent process that sends emails and update its status.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+<dl class="method">
+<dt id="owlery.models.EmailMessage.clean">
+<code class="descname">clean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#EmailMessage.clean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.EmailMessage.clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to clean &amp; validate data fields.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="owlery.models.EmailMessage.force_send">
+<code class="descname">force_send</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#EmailMessage.force_send"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.EmailMessage.force_send" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forcefully send this email now.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="owlery.models.EmailMessage.mark_send">
+<code class="descname">mark_send</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#EmailMessage.mark_send"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.EmailMessage.mark_send" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to mark email as send. Required values are automatically filled.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="owlery.models.EmailMessage.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#EmailMessage.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.EmailMessage.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pre-save method for this model.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="owlery.models.SmsMessage">
+<em class="property">class </em><code class="descclassname">owlery.models.</code><code class="descname">SmsMessage</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#SmsMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.SmsMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model to store all SMS send to the users. This model act as a buffer/queue which is picked up
+by an independent process executing periodically at specific time interval. This is process reads
+unsent SMS from this model in a batch and dispatch them for sending. The result is then updated
+accordingly.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+<dl class="method">
+<dt id="owlery.models.SmsMessage.clean">
+<code class="descname">clean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#SmsMessage.clean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.SmsMessage.clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to clean &amp; validate data fields.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="owlery.models.SmsMessage.mark_send">
+<code class="descname">mark_send</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#SmsMessage.mark_send"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.SmsMessage.mark_send" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to mark SMS as send. Required values are automatically filled.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="owlery.models.SmsMessage.save">
+<code class="descname">save</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#SmsMessage.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.SmsMessage.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pre-save method for this model.</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="owlery.models.validate_sms_no">
+<code class="descclassname">owlery.models.</code><code class="descname">validate_sms_no</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/owlery/models.html#validate_sms_no"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#owlery.models.validate_sms_no" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validator to check validity of a mobile number to which sms is to be send.</p>
+<p>Criteria: +&lt;code: 1-4 digit&gt;&lt;10-digit mobile number&gt;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>value</strong> &#8211; Mobile number</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None if valid else raises ValidationError.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="owls.html" class="btn btn-neutral float-right" title="Owls" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Owlery" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Gagandeep Singh.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

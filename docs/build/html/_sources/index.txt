@@ -7,12 +7,14 @@ Apps and modules
 ----------------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 3
 
    modules/main/index
    modules/accounts/index
    modules/watchdog/index
+   modules/owlery/index
    modules/utilities/index
+   modules/management_commands/index
 
 
 Indices and tables

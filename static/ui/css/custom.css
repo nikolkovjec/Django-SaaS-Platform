@@ -1,0 +1,18 @@
+.divider_custom{
+    margin: 2px 0px !important;
+}
+
+.semi_bold{
+    font-weight: 600 !important;
+}
+
+@media (max-width: 767px) {
+    .mobile_show{
+        display: inline;
+    }
+}
+@media (min-width: 767px) {
+    .mobile_show{
+        display: none;
+    }
+}

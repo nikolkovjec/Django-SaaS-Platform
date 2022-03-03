@@ -53,7 +53,8 @@ INSTALLED_APPS = [
     # Apps
     'accounts',
     'watchdog',
-
+    'owlery',
+    'console',
 ]
 
 MIDDLEWARE = [
@@ -149,6 +150,15 @@ USE_L10N = True
 
 USE_TZ = True
 
+# ----- Session -----
+# For all cases
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# For staff users (Django admin)
+SESSION_COOKIE_AGE = 8*60*60     # In seconds
+
+# For web portal users
+SESSION_COOKIE_AGE_PUBLIC = 24*60*60  # In seconds
 
 # ----- Static files (CSS, JavaScript, Images) -----
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
@@ -189,3 +199,14 @@ DOCS_PATH = os.path.join(BASE_DIR, "docs/build/html")
 
 # ----- Watchdog -----
 WATCHDOG_ERRORLOG_ENABLED = True
+
+# ----- Owlery -----
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'gagandeep.taurus91@gmail.com'
+EMAIL_HOST_PASSWORD = open( os.path.join(BASE_DIR,'email_pass.txt')).read()
+
+SMS_HOST_NUMBER = '+91999999'

@@ -4,6 +4,18 @@ Accounts
 App responsible for all user account related functionality such as user registration flow, sessions & token
 management, password reset/recovery etc.
 
+Modules
+-------
+
+    .. toctree::
+       :maxdepth: 2
+       :titlesonly:
+
+       mod_registration.rst
+       mod_user_login.rst
+       mod_sessions.rst
+
+
 Contents
 --------
 
@@ -14,5 +26,6 @@ Contents
        models
        forms
        views
-       utilities
+       utils
+       exceptions
 

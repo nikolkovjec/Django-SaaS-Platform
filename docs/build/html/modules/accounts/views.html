@@ -35,7 +35,7 @@
         <link rel="search" title="Search" href="../../search.html"/>
     <link rel="top" title="feedvuy 1.0 documentation" href="../../index.html"/>
         <link rel="up" title="Accounts" href="index.html"/>
-        <link rel="next" title="Utilities" href="utilities.html"/>
+        <link rel="next" title="Utilities" href="utils.html"/>
         <link rel="prev" title="Forms" href="forms.html"/> 
 
   
@@ -88,17 +88,21 @@
                 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../main/index.html">Main App</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Accounts</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#modules">Modules</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html#contents">Contents</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="models.html">Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="forms.html">Forms</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Views</a></li>
-<li class="toctree-l3"><a class="reference internal" href="utilities.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="utils.html">Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../watchdog/index.html">Watchdog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../owlery/index.html">Owlery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../utilities/index.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../management_commands/index.html">Management Commands</a></li>
 </ul>
 
             
@@ -165,6 +169,21 @@
 </dd></dl>
 
 <dl class="function">
+<dt id="accounts.views.recover_account">
+<code class="descclassname">accounts.views.</code><code class="descname">recover_account</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#recover_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.recover_account" title="Permalink to this definition">¶</a></dt>
+<dd><p>A view to recover user account by:</p>
+<blockquote>
+<div><ul class="simple">
+<li>First verifying &#8216;verification code&#8217;,</li>
+<li>Reset password</li>
+<li>Logging in the user.</li>
+</ul>
+</div></blockquote>
+<p><strong>Type</strong>: POST</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="accounts.views.registration">
 <code class="descclassname">accounts.views.</code><code class="descname">registration</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#registration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.registration" title="Permalink to this definition">¶</a></dt>
 <dd><p>View to handle registration. If called with GET opens registrations form otherwise on POST
@@ -182,10 +201,15 @@ register a user with given details.</p>
 </dd></dl>
 
 <dl class="function">
-<dt id="accounts.views.registration_resend_otp">
-<code class="descclassname">accounts.views.</code><code class="descname">registration_resend_otp</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#registration_resend_otp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.registration_resend_otp" title="Permalink to this definition">¶</a></dt>
-<dd><p>View to send OTP during verification process. No limitation on number of request is set for now.
-Call to this view is only valid for registered user who&#8217;s status is <cite>verification_pending</cite>.</p>
+<dt id="accounts.views.registration_resend_code">
+<code class="descclassname">accounts.views.</code><code class="descname">registration_resend_code</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#registration_resend_code"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.registration_resend_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>View to re-send verification code during registration process.</p>
+<blockquote>
+<div><ul class="simple">
+<li>No limitation on number of request is set for now.</li>
+<li>Call to this view is only valid for registered user who&#8217;s status is <cite>verification_pending</cite>.</li>
+</ul>
+</div></blockquote>
 <p><strong>Type</strong>: POST</p>
 <p><strong>Authors</strong>: Gagandeep Singh</p>
 </dd></dl>
@@ -193,17 +217,42 @@ Call to this view is only valid for registered user who&#8217;s status is <cite>
 <dl class="function">
 <dt id="accounts.views.registration_verify">
 <code class="descclassname">accounts.views.</code><code class="descname">registration_verify</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#registration_verify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.registration_verify" title="Permalink to this definition">¶</a></dt>
-<dd><p>A View to verify user registration by entering OTP send to mobile no.</p>
-<dl class="docutils">
-<dt>This view can be called in case:</dt>
-<dd><ul class="first last simple">
+<dd><p>A view to verify user registration by entering verification code that was send to user mobile no.</p>
+<p>This view can be called in case:</p>
+<blockquote>
+<div><ul class="simple">
 <li><strong>Normal registration flow</strong>: After user has signed up with his details, he is redirected to this view to verify himself.</li>
 <li><strong>Direct call withing expiry</strong>: In case user was unable to finish verification, he can directly use url before this link expires
 according to <a class="reference internal" href="models.html#accounts.models.RegisteredUser" title="accounts.models.RegisteredUser"><code class="xref py py-class docutils literal"><span class="pre">accounts.models.RegisteredUser</span></code></a>.``last_reg_date``.</li>
 </ul>
-</dd>
-</dl>
+</div></blockquote>
 <p><strong>Type</strong>: GET/POST</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="accounts.views.reset_password_plea">
+<code class="descclassname">accounts.views.</code><code class="descname">reset_password_plea</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#reset_password_plea"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.reset_password_plea" title="Permalink to this definition">¶</a></dt>
+<dd><p>A web API view to plea for password reset/recovery. This view verifies the user and
+send password recovery SMS and email containing verification code that will be used to reset password.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">An json response of type <code class="xref py py-class docutils literal"><span class="pre">utilties.api_utils.ApiResponse</span></code>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Type</strong>: POST</p>
+<p><strong>Authors</strong>: Gagandeep Singh</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="accounts.views.reset_password_plea_verify">
+<code class="descclassname">accounts.views.</code><code class="descname">reset_password_plea_verify</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#reset_password_plea_verify"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.reset_password_plea_verify" title="Permalink to this definition">¶</a></dt>
+<dd><p>An API view to check &#8216;forgot password&#8217; recovery code. This is used to tell user
+if the code he entered matched or not as he completes entering the code.</p>
+<p><strong>Type</strong>: GET</p>
 <p><strong>Authors</strong>: Gagandeep Singh</p>
 </dd></dl>
 
@@ -216,7 +265,7 @@ according to <a class="reference internal" href="models.html#accounts.models.Reg
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="utilities.html" class="btn btn-neutral float-right" title="Utilities" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="utils.html" class="btn btn-neutral float-right" title="Utilities" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="forms.html" class="btn btn-neutral" title="Forms" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>

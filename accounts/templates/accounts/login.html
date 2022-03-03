@@ -1,0 +1,324 @@
+{# Copyright (C) 2016 Feedvuy (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved #}
+{# Content in this document can not be copied and/or distributed without the express #}
+{# permission of Gagandeep Singh. #}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Feedvuy | Login</title>
+
+    <link href="{% get_static_prefix %}ui/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% get_static_prefix %}ui/font-awesome/css/font-awesome.css" rel="stylesheet">
+    <link href="{% get_static_prefix %}ui/css/animate.css" rel="stylesheet">
+
+    <link href="{% get_static_prefix %}ui/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css" rel="stylesheet">
+    <link href="{% get_static_prefix %}lib/growl/jquery.growl.css" rel="stylesheet">
+
+    <link href="{% get_static_prefix %}ui/css/style-default.css" rel="stylesheet">
+
+
+    <style>
+        @media (max-width: 767px) {
+            .content_body{
+                padding-top: 20px;
+            }
+        }
+    </style>
+
+</head>
+
+<body class="gray-bg">
+
+    <div class="middle-box text-center loginscreen animated fadeInDown content_body" style="width: 360px !important;">
+
+        <div class="panel panel-default">
+            <div class="panel-body" style="padding: 15px 20px !important;">
+                <div style="margin-top: 10px">
+                    <img src="{% get_static_prefix %}images/feedvuy_logo.png" style="width: 200px;">
+                    <p style="font-weight: 600;">
+                        Feedbacks
+                        &nbsp;●&nbsp;
+                        Surveys
+                        &nbsp;●&nbsp;
+                        Market intelligence
+                    </p>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <h3>Welcome to Feedvuy</h3>
+                    <p>Login in to see it in action.</p>
+                </div>
+
+                {% if recovery_failed %}
+                    <div class="alert alert-danger alert-dismissable" style="padding: 10px 30px 10px 10px;margin-top: 20px;">
+                        <button aria-hidden="true" data-dismiss="alert" class="close" type="button">×</button>
+                        Password recovery failed! Please try again.
+                    </div>
+                {% endif %}
+
+                <!-- Login form -->
+                <form id="form_login" method="post" class="m-t" style="margin-top: 20px;">{% csrf_token %}
+
+                    {% if login_fail %}
+                        <div class="error" style="margin: 20px 0px 10px 0px;">
+                            Invalid credentials!
+                        </div>
+                    {% endif %}
+
+                    <div style="margin-bottom: 15px">
+                        <div class="input-group m-b {% if login_fail %}has-error{% endif %}" style="margin: 0px;">
+                            <span class="input-group-addon">{{ country_tel_code }}</span>
+                            <input type="text" id="fld_username" class="form-control" name="username" placeholder="Mobile number" value="{{ username|default_if_none:"" }}"  maxlength="10" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group {% if login_fail %}has-error{% endif %}">
+                        <div>
+                            <input type="password" class="form-control" name="password" placeholder="Password" required>
+                        </div>
+
+                        <div id="loading_recover" class="text-navy" style="padding: 5px;display: none;">
+                            <img src="{% get_static_prefix %}images/loading/spinner_1.gif" style="height: 16px;">&nbsp;
+                            Sending verification code ...
+                        </div>
+                        <a id="btn_recover" href="javascript: recover_password();"><small>Forgot password?</small></a>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox checkbox-primary">
+                            <input id="chk_remember" type="checkbox" name="remember_me" checked="">
+                            <label for="chk_remember">
+                                Keep me logged in?
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary block full-width m-b">Login</button>
+
+                </form>
+                <!-- /Login form -->
+
+                <!-- Forgot password -->
+                <div id="div_recover_pass" style="display: none;">
+                    <form id="form_recover_pass" action="{% url 'accounts_recover_account' %}" method="post">{% csrf_token %}
+
+                        <div class="input-group m-b">
+                            <span class="input-group-addon">{{ country_tel_code }}</span>
+                            <input type="text" id="fld_forgot_username" class="form-control" name="mobile_no" required readonly>
+                        </div>
+
+                        <h3 class="text-warning" style="margin-top: 20px;">
+                            Recover your account
+                        </h3>
+                        <div style="margin-bottom: 10px;">
+                            A verification code has been send to your mobile number. You can use it
+                            to reset your password.
+
+                            <div>
+                                <div id="loading_recover_resend" class="text-navy" style="padding: 5px;display: none;">
+                                    <img src="{% get_static_prefix %}images/loading/spinner_1.gif" style="height: 16px;">&nbsp;
+                                    Resending verification code ...
+                                </div>
+                                <a id="btn_recover_resend" href="javascript: recover_password();"><small>Resend?</small></a>
+                            </div>
+                        </div>
+
+                        <div class="form-group {% if login_fail %}has-error{% endif %}">
+                            <input type="password" class="form-control" name="verification_code" placeholder="Verification code" required>
+                        </div>
+
+                        <div class="form-group {% if login_fail %}has-error{% endif %}">
+                            <input type="password" class="form-control" id="fld_new_password" name="new_password" placeholder="New password" required>
+                        </div>
+                        <div class="form-group {% if login_fail %}has-error{% endif %}">
+                            <input type="password" class="form-control" name="confirm_new_password" placeholder="Confirm password" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary block full-width m-b">Recover</button>
+                    </form>
+                </div>
+                <!-- /Forgot password -->
+
+                <!-- Sign up -->
+                <div style="margin-top: 20px;">
+                    <p class="text-muted text-center" style="margin-bottom: 5px;">
+                        <small>Do not have an account?</small>
+                    </p>
+                    <a href="{% url 'accounts_registration' %}" class="btn btn-sm btn-white btn-block">Create an account</a>
+                </div>
+                <!-- /Sign up -->
+
+            </div>
+        </div>
+
+        <div>
+            <p class="m-t">
+                <small>&copy; 2017 Feedvuy. All rights reserved.</small>
+            </p>
+        </div>
+    </div>
+
+    <!-- Mainly scripts -->
+    <script src="{% get_static_prefix %}ui/js/jquery-2.1.1.js"></script>
+    <script src="{% get_static_prefix %}ui/js/bootstrap.min.js"></script>
+
+    <script src="{% get_static_prefix %}ui/js/plugins/validate/jquery.validate.min.js"></script>
+    <script src="{% get_static_prefix %}lib/growl/jquery.growl.js"></script>
+
+    <script>
+
+        function recover_password(){
+            var $username = $('#fld_username');
+            if(!$username.valid()){
+                return;
+            }
+
+            var username = $username.val();
+
+            $.ajax({
+                type: "POST",
+                url: '{% url 'accounts_reset_password_plea' %}',
+                data: {
+                    "username": username,
+                    "csrfmiddlewaretoken": "{{ csrf_token }}"
+                },
+                loading: $("#loading_recover"),
+                loading_recover_resend: $("#loading_recover_resend"),
+                btn_recover: $("#btn_recover"),
+                btn_recover_resend: $("#btn_recover_resend"),
+                beforeSend: function() {
+                    this.loading.show();
+                    this.btn_recover.hide();
+
+                    this.loading_recover_resend.show();
+                    this.btn_recover_resend.hide();
+                },
+                success: function (result) {
+                    switch(result.status){
+                        case 'success': {
+                            $("#form_login").hide();
+
+                            $("#fld_forgot_username").val(username);
+                            $("#lbl_username").text(username);
+
+                            $("#div_recover_pass").show();
+                        }break;
+                        default: {
+                            $.growl.error({
+                                title: '<i class="fa fa-ban"></i> Denied!',
+                                message: result.message
+                            });
+                        }
+                    }
+                    this.loading.hide();
+                    this.btn_recover.show();
+
+                    this.loading_recover_resend.hide();
+                    this.btn_recover_resend.show();
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    if(xhr.readyState == 0){
+                        $.growl.error({
+                            title: '<i class="fa fa-signal"></i> Network error!',
+                            message: "Please check your internet connection."
+                        });
+                    }else{
+                        $.growl.error({
+                            title: '<i class="fa fa-exclamation-triangle"></i> Error!',
+                            message: "Something went wrong. Our engineers will be informed."
+                        });
+                    }
+
+
+                    this.loading.hide();
+                    this.btn_recover.show();
+
+                    this.loading_recover_resend.hide();
+                    this.btn_recover_resend.show();
+                }
+            });
+        }
+
+        $(function(){
+            $("#form_login").validate({
+{#                errorClass: "error",#}
+{#                errorElement: "div",#}
+                errorPlacement: function (error, element) {
+                    var elem_name = element.attr("name");
+
+                    if (elem_name == "username") {
+                        error.insertAfter(element.parent());
+                    } else {
+                        error.insertAfter(element)
+                    }
+                },
+                rules: {
+                    username: {
+                        required: true,
+                        digits: true,
+                        minlength: 10,
+                        maxlength: 10
+                    },
+                    password: {
+	                    required: true,
+	                    minlength: 3,
+	                }
+                },
+                messages: {
+                    username: "Please enter your 10-digit mobile number.",
+                    password: {
+                        required: "Please enter your password.",
+                        minlength: "Password should be minimum 3 characters.",
+                    }
+                }
+            });
+            
+            $("#form_recover_pass").validate({
+{#                errorClass: "error",#}
+{#                errorElement: "div",#}
+                rules: {
+                    username: {
+                        required: true,
+                        digits: true,
+                        minlength: 10,
+                        maxlength: 10
+                    },
+                    verification_code:{
+                        required: true
+                    },
+                    new_password: {
+	                    required: true,
+	                    minlength: 3,
+	                },
+                    confirm_new_password: {
+                        required: true,
+	                    minlength: 3,
+                        equalTo: "#fld_new_password"
+                    }
+                },
+                messages: {
+                    username: "Please enter your 10-digit mobile number.",
+                    verification_code: "Please enter the verification code.",
+                    new_password: {
+                        required: "Please enter your password.",
+                        minlength: "Password should be minimum 3 characters.",
+                    },
+                    confirm_new_password: {
+                        required: "Please enter your password.",
+                        minlength: "Password should be minimum 3 characters.",
+                        equalTo: "Password does not match.",
+                    }
+                }
+            });
+
+        });
+    </script>
+
+</body>
+
+</html>
