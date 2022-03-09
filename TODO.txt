@@ -1,15 +1,19 @@
 - Infrastructure
     - Globalization & timezones *
     - User Management
-        - Deactivate/Reactivate account
         - User Roles
         - Default Group for public user
         - Sudo user login
 
+    - Mobile/Desktop client check (django-mobile)
     - New Feature Promotion
 
 - UI
-    - Regis suspended
+    - Blue Skin
+    - Report
+    - Suggestions
+    - Settings
+    - Profile
 
 - SEO
 - Skin

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Views &mdash; feedvuy 1.0 documentation</title>
+  <title>Views &mdash; feedvay 1.0 documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="feedvuy 1.0 documentation" href="../../index.html"/>
+    <link rel="top" title="feedvay 1.0 documentation" href="../../index.html"/>
         <link rel="up" title="Accounts" href="index.html"/>
         <link rel="next" title="Utilities" href="utils.html"/>
         <link rel="prev" title="Forms" href="forms.html"/> 
@@ -54,7 +54,7 @@
           
 
           
-            <a href="../../index.html" class="icon icon-home"> feedvuy
+            <a href="../../index.html" class="icon icon-home"> feedvay
           
 
           
@@ -116,7 +116,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../index.html">feedvuy</a>
+        <a href="../../index.html">feedvay</a>
       </nav>
 
 
@@ -173,11 +173,11 @@
 <code class="descclassname">accounts.views.</code><code class="descname">recover_account</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#recover_account"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.recover_account" title="Permalink to this definition">¶</a></dt>
 <dd><p>A view to recover user account by:</p>
 <blockquote>
-<div><ul class="simple">
+<div><ol class="arabic simple">
 <li>First verifying &#8216;verification code&#8217;,</li>
 <li>Reset password</li>
-<li>Logging in the user.</li>
-</ul>
+<li>Logging in the user if user is verified else redirecting for verification. Delete token as well.</li>
+</ol>
 </div></blockquote>
 <p><strong>Type</strong>: POST</p>
 <p><strong>Authors</strong>: Gagandeep Singh</p>
@@ -235,6 +235,10 @@ according to <a class="reference internal" href="models.html#accounts.models.Reg
 <code class="descclassname">accounts.views.</code><code class="descname">reset_password_plea</code><span class="sig-paren">(</span><em>request</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/accounts/views.html#reset_password_plea"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#accounts.views.reset_password_plea" title="Permalink to this definition">¶</a></dt>
 <dd><p>A web API view to plea for password reset/recovery. This view verifies the user and
 send password recovery SMS and email containing verification code that will be used to reset password.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Only &#8216;Verified&#8217; and &#8216;Unverified&#8217; users can plea for password recovery</p>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -277,7 +281,7 @@ if the code he entered matched or not as he completes entering the code.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2016, Gagandeep Singh.
+        &copy; Copyright 2017, Gagandeep Singh.
 
     </p>
   </div>

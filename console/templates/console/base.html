@@ -1,9 +1,9 @@
-{# Copyright (C) 2016 Feedvuy (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved #}
+{# Copyright (C) 2017 Feedvay (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved #}
 {# Content in this document can not be copied and/or distributed without the express #}
 {# permission of Gagandeep Singh. #}
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" ng-app="{{ app_name }}">
 
 <head>
     <meta charset="utf-8">
@@ -15,14 +15,19 @@
     <link href="{% get_static_prefix %}ui/font-awesome/css/font-awesome.css" rel="stylesheet">
     <link href="{% get_static_prefix %}ui/css/animate.css" rel="stylesheet">
 
+    <link href="{% get_static_prefix %}ui/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css" rel="stylesheet">
+    <link href="{% get_static_prefix %}lib/growl/jquery.growl.css" rel="stylesheet">
+    <link href="{% get_static_prefix %}ui/css/plugins/summernote/summernote.css" rel="stylesheet">
+
     <!-- Theme -->
 {#    <link href="{% get_static_prefix %}ui/css/style.css" rel="stylesheet">#}
     <link href="{% get_static_prefix %}ui/css/style-default.css" rel="stylesheet">
     <link href="{% get_static_prefix %}ui/css/custom.css" rel="stylesheet">
 
     {% block head %}
-        <title>Feedvuy</title>
+        <title>Feedvay</title>
     {% endblock %}
+
 </head>
 
 <body class="top-navigation">
@@ -30,6 +35,41 @@
     <div id="wrapper">
         <div id="page-wrapper" class="gray-bg">
 
+            <!--[if lte IE 9]>
+            <div align="center" style="padding-top: 40px;">
+                <img src="{% get_static_prefix %}images/feedvay_logo.png" style="height: 50px !important;" alt="Feedvay">
+                <h1 class="text-danger" style="margin: 10px 0px 10px 0px;">
+                    Unsupported browser!
+                </h1>
+                <div>
+                    This site does not support your browser. Kindly update your browser or
+                    install one of the following browsers:<b/>
+
+                    <div style="margin-top:15px;">
+                        <a href="https://www.google.com/chrome/">
+                            <img class="browser_icon" src="{% get_static_prefix %}images/browser-icons/chrome-icon.png" title="Google Chrome" alt="Google Chrome">
+                        </a>&nbsp;
+                        <a href="https://www.mozilla.org/en-US/firefox/new/">
+                            <img class="browser_icon" src="{% get_static_prefix %}images/browser-icons/firefox-icon.png" title="Mozilla Firefox" alt="Mozilla Firefox">
+                        </a>&nbsp;
+                        <a href="http://www.opera.com/">
+                            <img class="browser_icon" src="{% get_static_prefix %}images/browser-icons/opera-icon.png" title="Opera" alt="Opera">
+                        </a>&nbsp;
+                        <a href="http://www.apple.com/safari/">
+                            <img class="browser_icon" src="{% get_static_prefix %}images/browser-icons/safari-icon.png" title="Safari" alt="Safari">
+                        </a>
+                    </div>
+
+                    <p style="margin-top:20px;">
+                        <a href="{% url 'accounts_logout' %}" class="btn btn-primary m-t">
+                            Logout
+                        </a>
+                    </p>
+                </div>
+            </div>
+            <![endif]-->
+
+            <!--[if gt IE 9]><!-->
             <!-- Top Navbar -->
             <div class="row border-bottom white-bg">
                 <nav class="navbar navbar-static-top" role="navigation">
@@ -37,8 +77,8 @@
                         <button aria-controls="navbar" aria-expanded="false" data-target="#navbar" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
                             <i class="fa fa-reorder"></i>
                         </button>
-                        <a href="{% url 'console_home' %}" class="navbar-brand" title="Feedvuy management console" style="padding: 8px !important;background: none !important;color: inherit !important;border-right: solid 1px #e7eaec;">
-                            <img src="{% get_static_prefix %}images/feedvuy_logo.png" style="height: 34px !important;" alt="Feedvuy">
+                        <a href="{% url 'console_home' %}" class="navbar-brand navbar_brand_custom" title="Feedvay management console">
+                            <img src="{% get_static_prefix %}images/feedvay_logo.png" style="height: 34px !important;" alt="Feedvay">
                         </a>
                     </div>
                     <div class="navbar-collapse collapse" id="navbar">
@@ -86,20 +126,24 @@
                         <!-- right -->
                         <ul class="nav navbar-nav navbar-right top-navigation-right-custom">
                             <li>
-                                <a aria-expanded="false" role="button" href="{% url 'home' %}" title="Feedvuy site">
+                                <a aria-expanded="false" role="button" href="{% url 'home' %}" title="Feedvay site">
                                     <i class="fa fa-globe" style="margin: 0px !important;"></i>
-                                    <span class="mobile_show" style="padding-left: 6px;">Feedvuy site</span>
+                                    <span class="mobile_show" style="padding-left: 6px;">Feedvay site</span>
                                 </a>
                             </li>
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" title="Help and report">
                                     <i class="fa fa-lightbulb-o" style="margin: 0px !important;"></i>
-                                    <span class="mobile_show" style="padding-left: 6px;">Help and report</span>
+                                    <span class="mobile_show" style="padding-left: 6px;">Help and report <i class="caret"></i></span>
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li><a href="#"><i class="fa fa-question-circle"></i>&nbsp;&nbsp;Help</a></li>
                                     <li role="separator" class="divider divider_custom"></li>
-                                    <li><a href="#"><i class="fa fa-bug"></i>&nbsp;&nbsp;Report problem</a></li>
+                                    <li>
+                                        <a href="javascript: void(0);" ng-click="Mod_watchdog.report_problem('{{ request.get_full_path }}')" >
+                                            <i class="fa fa-bug"></i>&nbsp;&nbsp;Report problem
+                                        </a>
+                                    </li>
                                     <li><a href="#"><i class="fa fa-comments-o"></i>&nbsp;&nbsp;Suggest change</a></li>
                                 </ul>
                             </li>
@@ -153,14 +197,15 @@
                 </div>
             </div>
             <!-- /Content -->
+            <![endif]-->
 
             <!-- Footer -->
             <div class="footer">
-                <div class="pull-right">
-                    10GB of <strong>250GB</strong> Free.
-                </div>
+{#                <div class="pull-right">#}
+{#                    10GB of <strong>250GB</strong> Free.#}
+{#                </div>#}
                 <div>
-                    <strong>Copyright</strong> Example Company &copy; 2014-2017
+                    © 2017 Feedvay. All rights reserved.
                 </div>
             </div>
             <!-- /Footer -->
@@ -171,13 +216,26 @@
 
     <!-- Main scripts -->
     <script src="{% get_static_prefix %}ui/js/jquery-2.1.1.js"></script>
+{#    <script src="{% get_static_prefix %}ui/js/plugins/jquery-ui/jquery-ui.js"></script>#}
     <script src="{% get_static_prefix %}ui/js/bootstrap.min.js"></script>
     <script src="{% get_static_prefix %}ui/js/plugins/metisMenu/jquery.metisMenu.js"></script>
     <script src="{% get_static_prefix %}ui/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+    <script src="{% get_static_prefix %}ui/js/plugins/summernote/summernote.min.js"></script>
+
 
     <!-- Custom and plugin javascript -->
     <script src="{% get_static_prefix %}ui/js/inspinia.js"></script>
     <script src="{% get_static_prefix %}ui/js/plugins/pace/pace.min.js"></script>
+
+    <!-- Main Angular scripts-->
+    <script src="{% get_static_prefix %}ui/js/angular/angular.min.js"></script>
+    <script src="{% get_static_prefix %}ui/js/angular/angular-cookies.min.js"></script>
+    <script src="{% get_static_prefix %}ui/js/bootstrap/ui-bootstrap-tpls-1.1.2.min.js"></script>
+    <script src="{% get_static_prefix %}ui/js/plugins/oclazyload/dist/ocLazyLoad.min.js"></script>
+    <script src="{% get_static_prefix %}ui/js/plugins/summernote/angular-summernote.min.js"></script>
+
+    <!-- Feedvay angular apps -->
+    <script src="{% get_static_prefix %}apps/watchdog/watchdog.js"></script>
 
     {% block scripts %}
     <script>

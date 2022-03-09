@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Feedvuy (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved
+# Copyright (C) 2017 Feedvay (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved
 # Content in this document can not be copied and/or distributed without the express
 # permission of Gagandeep Singh.
 from django.contrib import admin
@@ -50,7 +50,7 @@ class RegisteredUserProxyAdmin(admin.ModelAdmin):
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
 
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_active')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined')
     list_filter = ('is_active', 'registereduser__status', 'registereduser__reg_method')
     search_fields = ('username', 'first_name', 'last_name', 'email')
     ordering = ('-date_joined',)

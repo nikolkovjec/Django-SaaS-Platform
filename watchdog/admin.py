@@ -1,4 +1,4 @@
-# Copyright (C) 2016 Feedvuy (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved
+# Copyright (C) 2017 Feedvay (Gagandeep Singh: singh.gagan144@gmail.com) - All Rights Reserved
 # Content in this document can not be copied and/or distributed without the express
 # permission of Gagandeep Singh.
 from django.contrib import admin
@@ -14,7 +14,7 @@ class ErrorLogAdmin(admin.ModelAdmin):
 
     **Authors**: Gagandeep Singh
     """
-    list_display = ('id', 'shortened_url', 'server_name', 'class_name', 'message', 'times_seen', 'is_resolved')
+    list_display = ('id', 'shortened_url', 'server_name', 'message', 'times_seen', 'is_resolved', 'last_seen_on')
     list_filter = ('is_resolved', 'server_name', 'class_name', 'last_seen_on')
     raw_id_fields = ('last_seen_by', 'resolved_by')
     search_fields = ('server_name', 'class_name', 'url')
