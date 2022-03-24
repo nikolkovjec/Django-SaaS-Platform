@@ -9,14 +9,13 @@
     - New Feature Promotion
 
 - UI
-    - Blue Skin
-    - Report
-    - Suggestions
+    - Summernote css
+    - Report Display view
+    - Suggestions Display view
     - Settings
     - Profile
 
 - SEO
-- Skin
 
 - Geography
     - Country tel code
