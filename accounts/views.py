@@ -177,7 +177,10 @@ def registration(request):
     country_tel_code = '+91'    #TODO: Set default country_tel_code
     data = {
         'country_tel_code': country_tel_code,
-        'RECAPTCHA_PUBLIC_KEY': settings.RECAPTCHA_PUBLIC_KEY
+        'RECAPTCHA_PUBLIC_KEY': settings.RECAPTCHA_PUBLIC_KEY,
+        'days': range(1,32),
+        'month': range(1,13),
+        'year': range(1900, (timezone.now().year+1))
     }
     form_reg = RegistrationForm()
 
@@ -202,6 +205,7 @@ def registration(request):
                 data['username_exists'] = True
             elif user_class == ClassifyRegisteredUser.UNVERIFIED:
                 # Bypass: Send token & redirect to verification
+                # No update of user information here
                 registered_user = RegisteredUser.objects.get(user__username=username)
 
                 # If this registered user is a lead, transit its state
@@ -260,6 +264,17 @@ def registration(request):
                         user = new_user,
                         reg_method = RegisteredUser.REG_WEB_PORTAL
                     )
+
+                    # Create 'UserProfile'
+                    user_profile = UserProfile(
+                        registered_user_id = new_registered_user.id
+                    )
+                    user_profile.add_update_attribute('first_name', new_user.first_name, auto_save=False)
+                    user_profile.add_update_attribute('last_name', new_user.last_name, auto_save=False)
+                    user_profile.add_update_attribute('date_of_birth', form_reg.get_date_of_birth(), auto_save=False)
+                    user_profile.add_update_attribute('gender', form_data['gender'], auto_save=False)
+                    user_profile.save()
+
 
                     # Transit status from 'lead' to 'verification_pending'
                     if new_registered_user.status == RegisteredUser.ST_LEAD:
