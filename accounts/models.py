@@ -24,6 +24,7 @@ from django.contrib.sessions.models import Session
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 
 from accounts.exceptions import *
+from owlery import owls
 
 class RegisteredUser(models.Model):
     """
@@ -85,6 +86,10 @@ class RegisteredUser(models.Model):
     created_on  = models.DateTimeField(auto_now_add=True, editable=False, db_index=True, help_text='Date on which this suggestion was made.')
     modified_on = models.DateTimeField(null=True, blank=True, editable=False, help_text='Date on which this record was modified.')
 
+    @property
+    def profile(self):
+        return UserProfile.objects.get(registered_user_id=self.id)
+
     def __unicode__(self):
         return self.user.username
 
@@ -109,6 +114,45 @@ class RegisteredUser(models.Model):
         pass
 
     # ----- /Transitions -----
+
+    # --- Password ---
+    def set_password(self, new_password, send_owls=True):
+        """
+        Method to set a registered user password and save it.
+        This also sends any owls (Email or SMS) if required. Any owls related errors are silently ignored.
+
+        :param new_password: New password
+        :param send_owls: Set True to send mail/SMS to the user. Default:True
+        :return: None
+
+        .. note::
+            To prevent logout, execute following after this function.
+
+                >>> auth.update_session_auth_hash(request, user)
+
+
+        .. warning::
+            This method does not confirm with old password. Please confirm old password
+            before changing as per your use case for security reasons.
+
+        **Authors**: Gagandeep Singh
+        """
+        user = self.user
+        user.set_password(new_password)
+        user.save()
+
+        if send_owls:
+            # Send all owls
+            # (a) SMS owl
+            owls.SmsOwl.send_password_change_success(
+                mobile_no = user.username,
+                username = user.username
+            )
+
+            # (b) Email owl
+            owls.EmailOwl.send_password_change_success(user)
+
+        # TODO: Logout user from all mobile devices
 
     def clean(self):
         """
@@ -608,6 +652,8 @@ class UserProfile(Document):
         :param name: Name of the attribute.
         :param auto_save: Save model after locking
         :return: True if attribute found and successfully locked else False
+
+        **Authors**: Gagandeep Singh
         """
 
         updated = False
@@ -631,6 +677,8 @@ class UserProfile(Document):
         :param name: Name of the attribute
         :param auto_save: Save model after unlocking
         :return: True if attribute found and successfully released else False
+
+        **Authors**: Gagandeep Singh
         """
 
         updated = False
@@ -645,6 +693,23 @@ class UserProfile(Document):
             self.save()
 
         return updated
+
+    def get_meta_dict(self):
+        """
+        Method that returns dictionary of nested objects with key as attribute name and
+        value as dictionary object containing information for that attribute.
+        :return: Dictionary of format {"<attribute_name">: { <information dict> },  }
+        """
+
+        meta_dict = {}
+        for attr in self.list_attributes:
+            if attr.active:
+                data = dict(attr.to_mongo())
+                if isinstance(data['value'], timezone.datetime):
+                    data['value'] = data['value'].isoformat()
+                meta_dict[attr.name] = data
+
+        return meta_dict
 
 
     def save(self, complete_save=True, *args, **kwargs):
@@ -680,35 +745,6 @@ class UserProfile(Document):
         raise ValidationError('Denied! You cannot delete UserProfile.')
 
 # ---------- Global Methods ----------
-def set_user_password(user, new_password, send_owls=True):
-    """
-    Method to set a user password and save it.
-    This also sends any owls (Email or SMS) if required. Any errors are silently ignored.
-
-    :param user: 'User' model object
-    :param new_password: New password
-    :param send_owls: Set True to send mail/SMS to the user. Default:True
-    :return: None
-
-    .. note::
-        To prevent logout, execute following after this function.
-
-            >>> auth.update_session_auth_hash(request, user)
-
-
-    **Authors**: Gagandeep Singh
-    """
-    user.set_password(new_password)
-    user.save()
-
-    # if send_mail and settings.MAIL_PASS_RESET_SUCCESS:
-    #     try:
-    #         result = mailing.send_password_reset_success_email(user)
-    #     except SMTPAuthenticationError:
-    #         pass
-    #     except:
-    #         pass
-
 def force_logout_user(user_id):
     """
     Method to forcefully logout a user from all web login only.

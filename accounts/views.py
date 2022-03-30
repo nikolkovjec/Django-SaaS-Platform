@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.conf import settings
 import jwt
 from django.contrib import auth
-import json
+import ujson
 
 from django.contrib.auth.models import User
 
@@ -257,13 +257,15 @@ def registration(request):
                         is_active = False
 
                     )
-                    set_user_password(new_user, form_data['password'], False) # This will save user
 
                     # Create'RegisterUser'
                     new_registered_user = RegisteredUser.objects.create(
                         user = new_user,
                         reg_method = RegisteredUser.REG_WEB_PORTAL
                     )
+
+                    # Set password
+                    new_registered_user.set_password(form_data['password'], False) # This will save user
 
                     # Create 'UserProfile'
                     user_profile = UserProfile(
@@ -654,9 +656,87 @@ def recover_account(request):
 # ==================== Console ====================
 @registered_user_only
 def console_account_settings(request):
+    """
+    A console view to open user settings. This view then calls individual partials for various sections
+    under user account settings.
+
+    **Type**: GET
+
+    **Authors**: Gagandeep Singh
+    """
+
+    registered_user = request.user.registereduser
     data = {
-        "app_name": "app_account"
+        "app_name": "app_account",
+        "user_profile": registered_user.profile
     }
     return render(request, 'accounts/console/account_settings.html', data)
+
+@registered_user_only
+def console_password_change(request):
+    """
+    An API view to change user password. The user fills a form and submit old & new password.
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+
+    if request.method.lower() == 'post':
+        form_chng = PasswordChangeForm(request.POST)
+
+        if form_chng.is_valid():
+            form_data = form_chng.cleaned_data
+
+            # Here request.user must be 'RegisteredUser' since view has been protected by the
+            # the decorator 'registered_user_only'
+            user = request.user
+            registered_user = request.user.registereduser
+
+            # Confirm old password
+            if user.check_password(form_data['old_password']):
+                # Change password
+                new_password = form_data['new_password']
+                registered_user.set_password(new_password)
+
+                # Prevent portal logout
+                auth.update_session_auth_hash(request, user)
+
+                return ApiResponse(status=ApiResponse.ST_SUCCESS, message='ok').gen_http_response()
+            else:
+                return ApiResponse(status=ApiResponse.ST_UNAUTHORIZED, message='Invalid password, please try again.').gen_http_response()
+        else:
+            return ApiResponse(status=ApiResponse.ST_FAILED, message='Incomplete submission.').gen_http_response()
+    else:
+        # GET Forbidden
+        return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
+
+
+@registered_user_only
+def console_account_settings_privinfo_update(request):
+    """
+    An API view to update registered user private information.
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+
+    if request.method.lower() == 'post':
+        form = PrivateInfoForm(request.POST)
+
+        if form.is_valid():
+            registered_user = request.user.registereduser
+
+            all_ok, errors = form.save(str(registered_user.profile.pk))
+            if all_ok:
+                return ApiResponse(status=ApiResponse.ST_SUCCESS, message='ok').gen_http_response()
+            else:
+                return ApiResponse(status=ApiResponse.ST_PARTIAL_SUCCESS, message='Success with few ignored errors.', errors=errors).gen_http_response()
+        else:
+            return ApiResponse(status=ApiResponse.ST_FAILED, message='Incomplete submission.').gen_http_response()
+    else:
+        # GET Forbidden
+        return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
 
 # ==================== Console ====================
