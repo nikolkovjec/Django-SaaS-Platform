@@ -12,10 +12,11 @@
     - Summernote css
     - Report Display view
     - Suggestions Display view
-    - Profile
-        - Datepicker
-        - Show partial errors for priv info
 
+- Brands
+    - image size validations
+
+- Data privacy conventions (public, encypted, client shared etc)
 - SEO
 
 - Geography

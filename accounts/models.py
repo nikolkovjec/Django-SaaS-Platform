@@ -51,7 +51,7 @@ class RegisteredUser(models.Model):
         - Registration can be multiple times. Only last registration information is kept for now.
 
 
-    **State chart diagram for state machine**:
+    **State chart diagram for user status**:
 
         .. image:: ../../_static/accounts/registereduser_statechart.jpg
 
@@ -83,7 +83,7 @@ class RegisteredUser(models.Model):
     last_reg_date = models.DateTimeField(auto_now_add=True, editable=False, help_text='Last registration datetime.')
     status      = FSMField(default=ST_LEAD, protected=True, db_index=True, editable=False, help_text='Status of user registration.')
 
-    created_on  = models.DateTimeField(auto_now_add=True, editable=False, db_index=True, help_text='Date on which this suggestion was made.')
+    created_on  = models.DateTimeField(auto_now_add=True, editable=False, db_index=True, help_text='Date on which this user was made.')
     modified_on = models.DateTimeField(null=True, blank=True, editable=False, help_text='Date on which this record was modified.')
 
     @property
@@ -703,11 +703,10 @@ class UserProfile(Document):
 
         meta_dict = {}
         for attr in self.list_attributes:
-            if attr.active:
-                data = dict(attr.to_mongo())
-                if isinstance(data['value'], timezone.datetime):
-                    data['value'] = data['value'].isoformat()
-                meta_dict[attr.name] = data
+            data = dict(attr.to_mongo())
+            if isinstance(data['value'], timezone.datetime):
+                data['value'] = data['value'].isoformat()
+            meta_dict[attr.name] = data
 
         return meta_dict
 

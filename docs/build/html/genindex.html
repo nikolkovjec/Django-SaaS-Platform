@@ -89,6 +89,7 @@
 <li class="toctree-l1"><a class="reference internal" href="modules/watchdog/index.html">Watchdog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/owlery/index.html">Owlery</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/utilities/index.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/brands/index.html">Brands</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/management_commands/index.html">Management Commands</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules/console/index.html">Console</a></li>
 </ul>
@@ -138,6 +139,7 @@
 
 <div class="genindex-jumpbox">
  <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
@@ -171,14 +173,18 @@
   <dt><a href="modules/accounts/models.html#module-accounts.models">accounts.models (module)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="modules/accounts/utils.html#module-accounts.utils">accounts.utils (module)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="modules/accounts/views.html#module-accounts.views">accounts.views (module)</a>
+  </dt>
+
+      
+  <dt><a href="modules/brands/models.html#brands.models.Brand.add_owner">add_owner() (brands.models.Brand method)</a>
   </dt>
 
       
@@ -187,6 +193,30 @@
 
       
   <dt><a href="modules/utilities/api_utils.html#utilities.api_utils.ApiResponse">ApiResponse (class in utilities.api_utils)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="modules/accounts/forms.html#accounts.forms.BasicInfoForm">BasicInfoForm (class in accounts.forms)</a>
+  </dt>
+
+      
+  <dt><a href="modules/brands/models.html#brands.models.Brand">Brand (class in brands.models)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="modules/brands/models.html#brands.models.BrandOwner">BrandOwner (class in brands.models)</a>
+  </dt>
+
+      
+  <dt><a href="modules/brands/models.html#module-brands.models">brands.models (module)</a>
   </dt>
 
   </dl></td>
@@ -210,6 +240,14 @@
       <dd><dl>
         
   <dt><a href="modules/accounts/models.html#accounts.models.UserToken.clean">(accounts.models.UserToken method)</a>
+  </dt>
+
+        
+  <dt><a href="modules/brands/models.html#brands.models.Brand.clean">(brands.models.Brand method)</a>
+  </dt>
+
+        
+  <dt><a href="modules/brands/models.html#brands.models.BrandOwner.clean">(brands.models.BrandOwner method)</a>
   </dt>
 
         
@@ -269,6 +307,10 @@
 
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="modules/brands/models.html#brands.models.Brand.delete_owner">delete_owner() (brands.models.Brand method)</a>
+  </dt>
+
       
   <dt><a href="modules/main/views.html#feedvay.views.docs">docs() (in module feedvay.views)</a>
   </dt>
@@ -333,6 +375,10 @@
   <dt><a href="modules/accounts/forms.html#accounts.forms.RegistrationForm.get_date_of_birth">get_date_of_birth() (accounts.forms.RegistrationForm method)</a>
   </dt>
 
+      
+  <dt><a href="modules/accounts/models.html#accounts.models.UserProfile.get_meta_dict">get_meta_dict() (accounts.models.UserProfile method)</a>
+  </dt>
+
   </dl></td>
 </tr></table>
 
@@ -370,6 +416,10 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="modules/brands/models.html#brands.models.Brand.mark_deleted">mark_deleted() (brands.models.Brand method)</a>
+  </dt>
+
+      
   <dt><a href="modules/owlery/models.html#owlery.models.EmailMessage.mark_send">mark_send() (owlery.models.EmailMessage method)</a>
   </dt>
 
@@ -379,6 +429,12 @@
   </dt>
 
       </dl></dd>
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="modules/utilities/custom_storages.html#utilities.custom_storages.MediaStorage">MediaStorage (class in utilities.custom_storages)</a>
+  </dt>
+
   </dl></td>
 </tr></table>
 
@@ -427,6 +483,12 @@
   </dt>
 
       </dl></dd>
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="modules/accounts/forms.html#accounts.forms.PrivateInfoForm">PrivateInfoForm (class in accounts.forms)</a>
+  </dt>
+
   </dl></td>
 </tr></table>
 
@@ -490,16 +552,32 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
-  <dt><a href="modules/accounts/models.html#accounts.models.RegisteredUser.save">save() (accounts.models.RegisteredUser method)</a>
+  <dt><a href="modules/accounts/forms.html#accounts.forms.BasicInfoForm.save">save() (accounts.forms.BasicInfoForm method)</a>
   </dt>
 
       <dd><dl>
+        
+  <dt><a href="modules/accounts/forms.html#accounts.forms.PrivateInfoForm.save">(accounts.forms.PrivateInfoForm method)</a>
+  </dt>
+
+        
+  <dt><a href="modules/accounts/models.html#accounts.models.RegisteredUser.save">(accounts.models.RegisteredUser method)</a>
+  </dt>
+
         
   <dt><a href="modules/accounts/models.html#accounts.models.UserProfile.save">(accounts.models.UserProfile method)</a>
   </dt>
 
         
   <dt><a href="modules/accounts/models.html#accounts.models.UserToken.save">(accounts.models.UserToken method)</a>
+  </dt>
+
+        
+  <dt><a href="modules/brands/models.html#brands.models.Brand.save">(brands.models.Brand method)</a>
+  </dt>
+
+        
+  <dt><a href="modules/brands/models.html#brands.models.BrandOwner.save">(brands.models.BrandOwner method)</a>
   </dt>
 
         
@@ -523,6 +601,8 @@
   </dt>
 
       </dl></dd>
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="modules/owlery/owls.html#owlery.owls.EmailOwl.send_password_change_success">send_password_change_success() (owlery.owls.EmailOwl static method)</a>
   </dt>
@@ -533,8 +613,6 @@
   </dt>
 
       </dl></dd>
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="modules/owlery/owls.html#owlery.owls.EmailOwl.send_password_reset">send_password_reset() (owlery.owls.EmailOwl static method)</a>
   </dt>
@@ -583,10 +661,22 @@
   <dt><a href="modules/accounts/models.html#accounts.models.RegisteredUser.trans_registered">trans_registered() (accounts.models.RegisteredUser method)</a>
   </dt>
 
+      
+  <dt><a href="modules/brands/models.html#brands.models.Brand.trans_revise_verification">trans_revise_verification() (brands.models.Brand method)</a>
+  </dt>
+
   </dl></td>
   <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="modules/accounts/models.html#accounts.models.RegisteredUser.trans_verification_completed">trans_verification_completed() (accounts.models.RegisteredUser method)</a>
+  </dt>
+
+      
+  <dt><a href="modules/brands/models.html#brands.models.Brand.trans_verification_failed">trans_verification_failed() (brands.models.Brand method)</a>
+  </dt>
+
+      
+  <dt><a href="modules/brands/models.html#brands.models.Brand.trans_verified">trans_verified() (brands.models.Brand method)</a>
   </dt>
 
   </dl></td>
@@ -596,7 +686,15 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
       
+  <dt><a href="modules/utilities/theme.html#utilities.theme.UiTheme">UiTheme (class in utilities.theme)</a>
+  </dt>
+
+      
   <dt><a href="modules/accounts/models.html#accounts.models.UserProfile.unlock_attribute">unlock_attribute() (accounts.models.UserProfile method)</a>
+  </dt>
+
+      
+  <dt><a href="modules/brands/models.html#brands.models.Brand.update_theme_files">update_theme_files() (brands.models.Brand method)</a>
   </dt>
 
       
@@ -631,6 +729,10 @@
 
       
   <dt><a href="modules/utilities/api_utils.html#module-utilities.api_utils">utilities.api_utils (module)</a>
+  </dt>
+
+      
+  <dt><a href="modules/utilities/custom_storages.html#module-utilities.custom_storages">utilities.custom_storages (module)</a>
   </dt>
 
       

@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand, CommandError
 import os
 
 from utilities.theme import render_skin
+from brands.models import Brand
 
 class Command(BaseCommand):
     """
@@ -29,7 +30,7 @@ class Command(BaseCommand):
 
         PATH = os.path.join(settings.BASE_DIR, "static/ui/css/style-default.css")
 
-        user_input = raw_input("This will override '{}' and all brand skin files. Are you sure (y/n)?".format(PATH))
+        user_input = raw_input("Are you sure (y/n)? This will override '{}' and all brand skin files: ".format(PATH))
         if user_input in ['Y', 'y']:
             # (1) Feedvay signature theme skin.
             self.stdout.write(self.style.SUCCESS('Rendering default project theme...'))
@@ -47,10 +48,10 @@ class Command(BaseCommand):
                 f.close()
 
             # (2) Brand skins
-            # For every brand
-            #   get parameters from model instance
-            #   content = render_skin()
-            #   save css file
+            self.stdout.write(self.style.SUCCESS("Updating themes for brands ..."))
+            for brand in Brand.objects.filter(deleted=False):
+                self.stdout.write(self.style.SUCCESS("Updating brand '{}'...".format(brand.name)))
+                brand.update_theme_files(auto_save=True)
 
             self.stdout.write(self.style.SUCCESS('Success! All skins updated.'))
         else:
