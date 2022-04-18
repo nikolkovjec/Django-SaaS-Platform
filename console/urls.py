@@ -5,6 +5,7 @@ from django.conf.urls import url, include
 from console import views
 
 from accounts import views as views_accounts
+from brands import views as views_brands
 
 url_account = [
     url(r'^settings/$', views_accounts.console_account_settings, name='console_accounts_settings'),
@@ -13,8 +14,14 @@ url_account = [
     url(r'^password/change/$', views_accounts.console_password_change, name='console_password_change'),
 ]
 
+url_brands = [
+    url(r'^$', views_brands.console_brands, name='console_brands'),
+    url(r'^create/$', views_brands.console_create_brand, name='console_brand_create'),
+]
+
 urlpatterns = [
     url(r'^$', views.home, name='console_home'),
 
     url(r'^account/', include(url_account)),
+    url(r'^brands/', include(url_brands)),
 ]

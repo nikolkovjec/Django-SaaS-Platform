@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 
 from django.db import models
+from django.template.defaultfilters import slugify
 from django_mysql.models import JSONField
 from django_fsm import FSMField, transition
 from django_fsm_log.decorators import fsm_log_by
@@ -49,7 +50,7 @@ class Brand(models.Model):
             - **Failed** brands are not operational and are not shown to the public.
             - **Verified** brands have no restrictions.
         - Brand can be **active** or inactive. It cannot be active if it is not verified. However when verified, activeness can be toggled.
-        - Brand cannot be deleted. To **delete** brand, mark it ``deleted``. A brand can be marked deleted at any status or time.
+        - Brand cannot be deleted. To **delete** brand,change status to ``deleted``. A brand can be marked any time.
         - If verification fails, it is mandatory to provide reason. This reason will be shown to the user.
         - **Claims** on the brand can disabled if brand is known such as top brands or contracted clients.
 
@@ -63,16 +64,19 @@ class Brand(models.Model):
     ST_VERF_PENDING = 'verification_pending'
     ST_VERIFIED = 'verified'
     ST_VERF_FAILED = 'verification_failed'
+    ST_DELETED = 'deleted'
 
     CH_STATUS = (
         (ST_VERF_PENDING, 'Verification pending'),
         (ST_VERIFIED, 'Verified'),
-        (ST_VERF_FAILED, 'Verification failed')
+        (ST_VERF_FAILED, 'Verification failed'),
+        (ST_DELETED, 'Deleted')
     )
 
     # --- Fields ---
     brand_uid   = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False, help_text='Unique ID of a brand which are hard to guess and can be used in urls. ')
     name        = models.CharField(max_length=255, unique=True, db_index=True, help_text='Name of the brand.')
+    slug        = models.SlugField(unique=True, blank=True, db_index=True, help_text='Slug of the name used for url referencing and dedupe matching.')
     description = models.TextField(max_length=512, help_text='Short description about the brand. Include keywords for better SEO and keep characters between 150-160.')
 
     owners      = models.ManyToManyField(RegisteredUser, through='BrandOwner', help_text='Owners of this brand.')
@@ -89,29 +93,18 @@ class Brand(models.Model):
     status      = FSMField(default=ST_VERF_PENDING, choices=CH_STATUS, protected=True, db_index=True, editable=False, help_text='Verification status of brand.')
     failed_reason = models.TextField(null=True, blank=True, help_text='Reason stating why this brand was failed during verification. This is shown to the user.')
     active      = models.BooleanField(default=False, db_index=True, help_text='Switch to disable brand temporarly. Configurations/editting can be made however, brand does not appear to public.')
-    deleted     = models.BooleanField(default=False, db_index=True, help_text='If true, it means this brand has been deleted. All operations are stopped from now. Brand does not appears to public. This must be used rarely.')
     disable_claim = models.BooleanField(default=False, help_text='Set true to stop any further claims on this brand. Use this for top known brands or contracted clients.')
 
     created_by  = models.ForeignKey(User, editable=False, help_text='User that created this brand. This can be a staff or registered user.')
     created_on  = models.DateTimeField(auto_now_add=True, editable=False, db_index=True, help_text='Date on which this record was created.')
     modified_on = models.DateTimeField(null=True, blank=True, editable=False, help_text='Date on which this record was modified.')
 
+    class Meta:
+        ordering = ('name', )
+
     def __unicode__(self):
         return "{}: {}".format(self.id, self.name)
 
-    def mark_deleted(self):
-        """
-        Method to mark this brand deleted. Use this method with caution.
-        Caution! Once marked, all operations on the brand are stopped and everything is freezed.
-        You cannot edit this brand and its entities however, you can view them.
-
-        Deleted brand is not shown to the public.
-
-        **Authors**: Gagandeep Singh
-        """
-
-        self.deleted = True
-        self.save()
 
     # --- Transitions ---
     @fsm_log_by
@@ -146,6 +139,20 @@ class Brand(models.Model):
         **Authors**: Gagandeep Singh
         """
         self.active = False
+
+    @fsm_log_by
+    @transition(field=status, source=[ST_VERF_PENDING, ST_VERIFIED, ST_VERF_FAILED], target=ST_DELETED)
+    def trans_delete(self):
+        """
+        Transition edge to mark this brand as deleted. Use this method with caution.
+        Once marked, all operations on the brand are stopped and everything is freezed.
+        You cannot edit this brand and its entities however, you can view them.
+
+        Deleted brand is not shown to the public.
+
+        **Authors**: Gagandeep Singh
+        """
+        pass
 
     # --- /Transitions ---
 
@@ -233,6 +240,10 @@ class Brand(models.Model):
             # Update modified date
             self.modified_on = timezone.now()
 
+        # Name sulg
+        if not self.slug:
+            self.slug = slugify(self.name)
+
         # Check UI Theme
         if self.ui_theme is not None:
             if self.ui_theme == {}:
@@ -269,7 +280,7 @@ class Brand(models.Model):
         super(self.__class__, self).save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False):
-        raise ValidationError("You cannot delete a brand. Please use 'mark_deleted()' method to mark this marked as deleted.")
+        raise ValidationError("You cannot delete a brand. Please use 'trans_delete()' method to mark this marked as deleted.")
 
 
 class BrandOwner(models.Model):

@@ -3,7 +3,7 @@
 /*
  *   Feedvay UI Theme
  *   UI version: INSP - 2.6.2
- *   Created on: 13-11-2016 11:36:55 0
+ *   Created on: 18-11-2016 16:16:35 0
 */
 h1,
 h2,
@@ -3776,7 +3776,7 @@ img.circle-border {
   color: inherit;
 }
 .breadcrumb > .active {
-  color: inherit;
+  color: #2a94db;
 }
 code {
   background-color: #F9F2F4;
@@ -8392,10 +8392,6 @@ body.md-skin {
 
 /* =================== Customization =================== */
 
-/*.breadcrumb > .active {*/
-    /*color: #0e9aef !important;*/
-/*}*/
-
 .help-block{
   color: #979797 !important;
 }
@@ -8426,6 +8422,23 @@ label > small{
 
 .btn-primary.btn-outline[disabled] {
     color: #FFFFFF;
+}
+
+.content_box {
+  background-color: #ffffff;
+  color: inherit;
+  padding: 15px 20px 20px 20px;
+  border: solid 1px #e7eaec;
+  border-radius: 3px;
+}
+
+.table_borderless tbody tr td,
+.table_borderless tbody tr th,
+.table_borderless thead tr th,
+.table_borderless thead tr td,
+.table_borderless tfoot tr th,
+.table_borderless tfoot tr td {
+    border: none;
 }
 
 /* ----- Top navbar ----- */
