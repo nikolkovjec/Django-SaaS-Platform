@@ -19,6 +19,7 @@
     <link href="{% get_static_prefix %}lib/growl/jquery.growl.css" rel="stylesheet">
     <link href="{% get_static_prefix %}ui/css/plugins/summernote/summernote.css" rel="stylesheet">
     <link href="{% get_static_prefix %}ui/css/plugins/datapicker/angular-datapicker.css" rel="stylesheet">
+    <link href="{% get_static_prefix %}ui/css/plugins/ladda/ladda-themeless.min.css" rel="stylesheet">
 
     <!-- Theme -->
 {#    <link href="{% get_static_prefix %}ui/css/style.css" rel="stylesheet">#}
@@ -83,8 +84,8 @@
                             <i class="fa fa-reorder"></i>
                         </button>
                         {% if request.curr_brand %}
-                            <a href="{% url 'console_home' %}b/{{ request.curr_brand.brand_uid }}/" class="navbar-brand navbar_brand_custom" title="{{ request.curr_brand.name }} management console">
-                                <img src="{{ request.curr_brand.logo.url }}" style="height: 34px !important;" alt="{{ request.curr_brand.name }}">
+                            <a href="{% url 'console_home' %}b/{{ request.curr_brand.brand_uid }}/" class="navbar-brand navbar_brand_custom" title="{% if request.curr_brand.acronym %}{{ request.curr_brand.acronym }}{% else %}{{ request.curr_brand.name }}{% endif %} management console">
+                                <img src="{{ request.curr_brand.logo.url }}" style="height: 34px !important;" alt="{% if request.curr_brand.acronym %}{{ request.curr_brand.acronym }}{% else %}{{ request.curr_brand.name }}{% endif %}">
                             </a>
                         {% else %}
                             <a href="{% url 'console_home' %}" class="navbar-brand navbar_brand_custom" title="Feedvay management console">
@@ -113,6 +114,12 @@
                                             <a href="{% url 'console_home' %}b/{{ b.brand_uid }}/">
                                                 <img src="{{ b.icon.url }}" style="height: 16px;">&nbsp;
                                                 {{ b.name }}
+
+                                                {% if b.status == 'verification_pending' %}
+                                                    <i class="fa fa-exclamation-circle text-warning" style="margin-left: 10px" tooltip-placement="right" uib-tooltip="Verification pending!"></i>
+                                                {% elif b.status == 'verification_failed' %}
+                                                    <i class="fa fa-ban text-danger" style="margin-left: 10px" tooltip-placement="right" uib-tooltip="Verification failed!"></i>
+                                                {% endif %}
                                             </a>
                                         </li>
                                     {% endfor %}
@@ -197,6 +204,24 @@
                     </div>
                 </nav>
             </div>
+
+            {% if request.curr_brand %}
+                <!-- Alert strip -->
+                {% if request.curr_brand.status == 'verification_pending' %}
+                    <div class="bg-warning alert_top_strip">
+                        <i class="fa fa-exclamation-triangle"></i>&nbsp;
+                        Verification of this brand is in progress.
+                        <a href="/console/b/{{ request.curr_brand.brand_uid }}/settings/#/details">Know more</a>
+                    </div>
+                {% elif request.curr_brand.status == 'verification_failed' %}
+                    <div class="bg-danger alert_top_strip">
+                        <i class="fa fa-ban"></i>&nbsp;
+                        Verification of this brand has been failed.
+                        <a href="/console/b/{{ request.curr_brand.brand_uid }}/settings/#/details">Click here</a> to know more.
+                    </div>
+                {% endif %}
+                <!-- /Alert strip -->
+            {% endif %}
             <!-- /Top Navbar -->
 
             <!-- Header -->
@@ -272,8 +297,12 @@
     <script src="{% get_static_prefix %}ui/js/plugins/summernote/angular-summernote.min.js"></script>
 {#    <script src="{% get_static_prefix %}ui/js/plugins/datapicker/angular-datepicker.js"></script>#}
     <script src="{% get_static_prefix %}lib/angular/angular-datepicker/angular-datepicker.js"></script>
+    <script src="{% get_static_prefix %}ui/js/plugins/ladda/spin.min.js"></script>
+    <script src="{% get_static_prefix %}ui/js/plugins/ladda/ladda.min.js"></script>
+    <script src="{% get_static_prefix %}ui/js/plugins/ladda/angular-ladda.min.js"></script>
 
     <!-- Feedvay angular apps -->
+    <script src="{% get_static_prefix %}ui/js/custom.js"></script>
     <script src="{% get_static_prefix %}apps/app_common.js"></script>
     <script src="{% get_static_prefix %}apps/watchdog/watchdog.js"></script>
 

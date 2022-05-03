@@ -14,7 +14,7 @@
         </div>
         <div class="col-xs-4">
             <div class="title-action" style="padding-top: 20px !important;">
-                <a href="{% url 'console_brand_create' %}" class="btn btn-primary">
+                <a href="{% url 'console_brand_new' %}" class="btn btn-primary">
                     <i class="fa fa-plus"></i>
                     <span class="mobile_hide">&nbsp;Create new brand</span>
                 </a>
@@ -55,16 +55,16 @@
 
                     <div align="center" class="logo">
                         <a href="{% url 'console_home' %}b/{{ b.brand_uid }}/">
-                            <img src="{{ b.logo.url }}">
+                            <img src="{{ b.logo.url }}" class="image_loading">
                         </a>
                     </div>
                     <div class="panel_body">
                         <div>
                             <a class="title" href="{% url 'console_home' %}b/{{ b.brand_uid }}/">{{ b.name }}</a>
                         </div>
-                        <small>
+                        <div style="font-size: 85%;">
                             {{ b.description|truncatechars:150 }}
-                        </small>
+                        </div>
                     </div>
                     {% if b.status == 'verification_failed' %}
                         <div class="footer_title bg-danger">

@@ -5,6 +5,8 @@ from __future__ import unicode_literals
 
 
 from django.db import models
+from django.db.models import Q
+from django.db.models.fields.files import ImageFieldFile
 from django.template.defaultfilters import slugify
 from django_mysql.models import JSONField
 from django_fsm import FSMField, transition
@@ -15,6 +17,7 @@ from django.contrib.auth.models import User
 import uuid
 import StringIO
 from django.core.files.uploadedfile import InMemoryUploadedFile,SimpleUploadedFile
+from PIL import Image
 
 from accounts.models import RegisteredUser
 from utilities.theme import UiTheme, render_skin
@@ -52,7 +55,15 @@ class Brand(models.Model):
         - Brand can be **active** or inactive. It cannot be active if it is not verified. However when verified, activeness can be toggled.
         - Brand cannot be deleted. To **delete** brand,change status to ``deleted``. A brand can be marked any time.
         - If verification fails, it is mandatory to provide reason. This reason will be shown to the user.
-        - **Claims** on the brand can disabled if brand is known such as top brands or contracted clients.
+        - **Claims** on the brand can disabled if brand is known such as top brands or contracted clients. This can
+          **ONLY** be done by staff user. Owner do not have rights to set this property.
+        - To make changes in fields take care the following:
+            - For Logo & icon dimensions & size constraints (must not change), make changes in
+              LOGO_DIM, LOGO_MAX_SIZE etc in brand enums.
+            - Make changes in :class:``brands.forms.BrandCreateEditForm``.
+            - Make changes for client side validations in '/static/partials/brands/create_edit_brand.html'.
+            - Make changes in 'brands/templates/brands/console/brand_settings.html'. Also in review modal.
+
 
     **State chart diagram for brand status**:
 
@@ -61,6 +72,12 @@ class Brand(models.Model):
     **Authors**: Gagandeep Singh
     """
     # --- Enums ---
+    LOGO_DIM = (300, 100)
+    LOGO_MAX_SIZE = 20*1024 # in bytes
+
+    ICON_DIM = (64, 64)
+    ICON_MAX_SIZE = 15*1024 # in bytes
+
     ST_VERF_PENDING = 'verification_pending'
     ST_VERIFIED = 'verified'
     ST_VERF_FAILED = 'verification_failed'
@@ -77,6 +94,7 @@ class Brand(models.Model):
     brand_uid   = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, editable=False, help_text='Unique ID of a brand which are hard to guess and can be used in urls. ')
     name        = models.CharField(max_length=255, unique=True, db_index=True, help_text='Name of the brand.')
     slug        = models.SlugField(unique=True, blank=True, db_index=True, help_text='Slug of the name used for url referencing and dedupe matching.')
+    acronym     = models.CharField(max_length=10, null=True, blank=True, help_text='Acronym of the brand.')
     description = models.TextField(max_length=512, help_text='Short description about the brand. Include keywords for better SEO and keep characters between 150-160.')
 
     owners      = models.ManyToManyField(RegisteredUser, through='BrandOwner', help_text='Owners of this brand.')
@@ -93,7 +111,7 @@ class Brand(models.Model):
     status      = FSMField(default=ST_VERF_PENDING, choices=CH_STATUS, protected=True, db_index=True, editable=False, help_text='Verification status of brand.')
     failed_reason = models.TextField(null=True, blank=True, help_text='Reason stating why this brand was failed during verification. This is shown to the user.')
     active      = models.BooleanField(default=False, db_index=True, help_text='Switch to disable brand temporarly. Configurations/editting can be made however, brand does not appear to public.')
-    disable_claim = models.BooleanField(default=False, help_text='Set true to stop any further claims on this brand. Use this for top known brands or contracted clients.')
+    disable_claim = models.BooleanField(default=False, help_text='Set true to stop any further claims on this brand. Only staff can set this property, user cannot.')
 
     created_by  = models.ForeignKey(User, editable=False, help_text='User that created this brand. This can be a staff or registered user.')
     created_on  = models.DateTimeField(auto_now_add=True, editable=False, db_index=True, help_text='Date on which this record was created.')
@@ -174,18 +192,38 @@ class Brand(models.Model):
 
         return ownership
 
-    def delete_owner(self, reg_user):
+    def delete_owner(self, reg_user, send_owls=True):
         """
         Method to disassociate (delete) a registered user from brand ownership.
 
-        :param reg_user: :class:`accounts.models.RegisteredUser` instance
+        :param reg_user: :class:`accounts.models.RegisteredUser` instance of the user giving awya the ownership
+        :param send_owls: Set True if you want to send owls.
 
         Throws exception: DoesNotExist(BrandOwner) if user is not an owner of this brand.
+
+        **Owls send**:
+
+            - **To disassociated user**: SMS, Email
+            - **To other owners**: Email, Notification
 
         **Authors**: Gagandeep Singh
         """
 
+        # Delete owner
         BrandOwner.objects.get(brand=self, registered_user=reg_user).delete()
+
+        if send_owls:
+            # --- Send all owls ---
+            from owlery import owls
+
+            # (a) Send to released user
+            owls.SmsOwl.send_brand_disassociation_success(reg_user.user.username, self, reg_user.user.username)
+            owls.EmailOwl.send_brand_disassociation_success(reg_user.user, self)
+
+            # (b) send notification and email to all remaining owners of the brand
+            owls.EmailOwl.send_brand_partner_left_message(self, reg_user)
+            owls.NotificationOwl.send_brand_partner_left_notif(self, reg_user)
+
 
     # --- /Owner management ---
 
@@ -240,9 +278,23 @@ class Brand(models.Model):
             # Update modified date
             self.modified_on = timezone.now()
 
-        # Name sulg
+        # Name slug
         if not self.slug:
             self.slug = slugify(self.name)
+
+        # Images
+        if not Brand.validate_logo_image(self.logo):
+            raise ValidationError('Logo must be {}x{} and less than {} KB.'.format(
+                Brand.LOGO_DIM[0],
+                Brand.LOGO_DIM[1],
+                Brand.LOGO_MAX_SIZE/1024
+            ))
+        if not Brand.validate_icon_image(self.icon):
+            raise ValidationError('Icon must be {}x{} and less than {} KB.'.format(
+                Brand.ICON_DIM[0],
+                Brand.ICON_DIM[1],
+                Brand.ICON_MAX_SIZE/1024
+            ))
 
         # Check UI Theme
         if self.ui_theme is not None:
@@ -254,7 +306,7 @@ class Brand(models.Model):
                 except Exception as ex:
                     raise ValidationError("ui_theme: " + ex.message)
 
-        # Status relate validations
+        # Status related validations
         if self.status == Brand.ST_VERF_FAILED and self.failed_reason in [None, '']:
             raise ValidationError("Please provide reason for verification failure.")
 
@@ -281,6 +333,65 @@ class Brand(models.Model):
 
     def delete(self, using=None, keep_parents=False):
         raise ValidationError("You cannot delete a brand. Please use 'trans_delete()' method to mark this marked as deleted.")
+
+    # ----- Static methods -----
+    @staticmethod
+    def does_exists(name):
+        """
+        Method to check if brand exists with given name or with slug of given name.
+
+        :param name: Name of the brand
+        :return: (bool) True if brand exists else False
+
+        **Authors**: Gagandeep Singh
+        """
+        slug = slugify(name)
+        return Brand.objects.filter(Q(name=name)|Q(slug=slug))
+
+    @staticmethod
+    def validate_logo_image(img_obj):
+        """
+        Method to validate brand logo image.
+        Handles both ``InMemoryUploadedFile`` and ``ImageFieldFile`` objects.
+
+        :param img_obj: InMemory object of image
+        :return: True if image is valid
+
+        **Authors**: Gagandeep Singh
+        """
+        if isinstance(img_obj, InMemoryUploadedFile):
+            # InMemory object
+            size = img_obj.size
+            dim = Image.open(img_obj).size
+        elif isinstance(img_obj, ImageFieldFile):
+            # Django model field from ImageField
+            size = img_obj._get_size()
+            dim = img_obj._get_image_dimensions()
+
+        return (size <= Brand.LOGO_MAX_SIZE and dim == Brand.LOGO_DIM)
+
+    @staticmethod
+    def validate_icon_image(img_obj):
+        """
+        Method to validate brand icon image.
+        Handles both ``InMemoryUploadedFile`` and ``ImageFieldFile`` objects.
+
+        :param img_obj: InMemory object of image
+        :return: True if image is valid
+
+        **Authors**: Gagandeep Singh
+        """
+        if isinstance(img_obj, InMemoryUploadedFile):
+            # InMemory object
+            size = img_obj.size
+            dim = Image.open(img_obj).size
+        elif isinstance(img_obj, ImageFieldFile):
+            # Django model field from ImageField
+            size = img_obj._get_size()
+            dim = img_obj._get_image_dimensions()
+
+        return (size <= Brand.ICON_MAX_SIZE and dim == Brand.ICON_DIM)
+
 
 
 class BrandOwner(models.Model):

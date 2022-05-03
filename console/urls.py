@@ -16,12 +16,18 @@ url_account = [
 
 url_brands = [
     url(r'^$', views_brands.console_brands, name='console_brands'),
-    url(r'^create/$', views_brands.console_create_brand, name='console_brand_create'),
+    url(r'^new/$', views_brands.console_brand_new, name='console_brand_new'),
+    url(r'^create/$', views_brands.console_brand_create, name='console_brand_create'),
+    url(r'^request-update/$', views_brands.console_brand_request_update, name='console_brand_request_update'),  # Only for brand console
+
+    url(r'^disassociate/$', views_brands.console_brand_disassociate, name='console_brand_disassociate'),    # Only for brand console
 ]
 
 urlpatterns = [
     url(r'^$', views.home, name='console_home'),
 
     url(r'^account/', include(url_account)),
+
     url(r'^brands/', include(url_brands)),
+    url(r'^settings/$', views_brands.console_brand_settings, name='console_brand_settings'),    # Only for brand console
 ]

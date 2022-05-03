@@ -8,15 +8,14 @@
     - Mobile/Desktop client check (django-mobile)
     - New Feature Promotion
 
+
 - UI
     - Summernote css
     - Report Display view
     - Suggestions Display view
 
 - Brands
-    - image size validations
-    - New Brand
-        - Autocomplete brand name check
+    - image size validations (Client side only)
 
 - Data privacy conventions (public, encypted, client shared etc)
 - SEO
@@ -26,6 +25,7 @@
 
 - Crons
     - Delete orphan sessions & UserSessions
+    - Delete expired notification messages
 
 - Logo
 - SMS Gateway service classes

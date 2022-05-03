@@ -1,6 +1,16 @@
 'use strict';
 
 // ---------- Directives ----------
+function staticInclude($http, $templateCache, $compile) {
+    return function (scope, element, attrs) {
+        var templatePath = attrs.staticInclude;
+        $http.get(templatePath, {cache: $templateCache}).success(function (response) {
+            var contents = element.html(response).contents();
+            $compile(contents)(scope);
+        });
+    };
+};
+
 function compareTo() {
     return {
         require: "ngModel",
@@ -100,6 +110,49 @@ function previewImage() {
     }
 }
 
+function fileModel($parse) {
+    return {
+        restrict: 'A',
+        link: function(scope, element, attrs) {
+            var model = $parse(attrs.fileModel);
+            var modelSetter = model.assign;
+
+            element.bind('change', function(){
+                scope.$apply(function(){
+                    modelSetter(scope, element[0].files[0]);
+                });
+            });
+        }
+    };
+}
+
+
+function validateHexColor() {
+    // DOM usage: validate-hex-color
+    return {
+        require: 'ngModel',
+        link: function (scope, elem, attr, ngModel) {
+            var regex = /^#[0-9A-F]{6}$/i;
+
+            function validate_hex_color(value){
+                if(value == null){
+                    ngModel.$setValidity('validate-hex-color', true);
+                }
+                else{
+                    var valid = regex.test(value);
+                    ngModel.$setValidity('validate-hex-color', valid);
+                }
+                return value;
+            }
+
+            ngModel.$parsers.push(validate_hex_color);      // For DOM -> model validation
+            ngModel.$formatters.push(validate_hex_color);   // For model -> DOM validation
+        }
+    };
+}
+
+
+
 /* ----- UI Theme ----- */
 /**
  * pageTitle - Directive for set Page title - mata title
@@ -112,7 +165,7 @@ function pageTitle($rootScope, $timeout) {
                 var title = 'Feedvay Management Console';
                 // Create your own title pattern
                 if (toState.data && toState.data.pageTitle){
-                    title = toState.data.pageTitle + ' - Feedvay';
+                    title = toState.data.pageTitle;
                 }
                 $timeout(function() {
                     element.text(title);
@@ -126,10 +179,13 @@ function pageTitle($rootScope, $timeout) {
 // ---------- /Directives ----------
 
 angular.module('feedvay.common',[])
+.directive('staticInclude', staticInclude)
 .directive("compareTo", compareTo)
 .directive('remodelDatetime', remodelDatetime)
 .directive('validateFile', validateFile)
 .directive('previewImage', previewImage)
+.directive('validateHexColor', validateHexColor)
+.directive('fileModel', ['$parse', fileModel])
 
 .directive('pageTitle', pageTitle);
 
