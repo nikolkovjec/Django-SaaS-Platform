@@ -69,7 +69,7 @@ def console_brand_create(request):
 def console_brand_request_update(request):
     """
     An API view to submit changes in brand details. This view can be called to edit brand details or
-    re-submit brand details after verification failure.
+    re-submit brand details after verification of brand has been failed.
 
     **Type**: POST
 
@@ -77,15 +77,29 @@ def console_brand_request_update(request):
     """
     if request.method.lower() == 'post':
         brand = request.curr_brand
-        form_brand_change = None
 
-        if True:#form_brand_change.is_valid():
-            # form_data = form_brand_change.cleaned_data
+        # Check status and act accordingly
+        if brand.status == Brand.ST_DELETED:
+            # Brand deleted. Not allowed
+            return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message="Denied! Brand '{}' has been deleted.".format(brand.name)).gen_http_response()
+        elif brand.status == Brand.ST_VERIFIED:
+            # Create Change log
+            try:
+                is_valid, errors = ops.create_brand_change_log(brand, request.user.registereduser, request.POST, request.FILES)
+                if is_valid:
+                    return ApiResponse(status=ApiResponse.ST_SUCCESS, message='Your change request has been queued for verification.').gen_http_response()
+                else:
+                    return ApiResponse(status=ApiResponse.ST_FAILED, message='Please correct marked errors.', errors=errors).gen_http_response()
 
-            return ApiResponse(status=ApiResponse.ST_SUCCESS, message='Your request has been send for verification.').gen_http_response()
+            except Exception as ex:
+                return ApiResponse(status=ApiResponse.ST_FAILED, message=ex.message).gen_http_response()
         else:
-            errors = dict(form_brand_change.errors)
-            return ApiResponse(status=ApiResponse.ST_FAILED, message='Please correct marked errors.', errors=errors).gen_http_response()
+            # Inplace update
+            try:
+                ops.reregister_or_update_brand(brand, request.POST, request.FILES)
+                return ApiResponse(status=ApiResponse.ST_SUCCESS, message='All updates made successfully').gen_http_response()
+            except Exception as ex:
+                return ApiResponse(status=ApiResponse.ST_FAILED, message=ex.message).gen_http_response()
     else:
         # GET Forbidden
         return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
@@ -138,6 +152,31 @@ def console_brand_disassociate(request):
         else:
             # Confirmation missing.
             return ApiResponse(status=ApiResponse.ST_FAILED, message='Please confirm your action.').gen_http_response()
+    else:
+        # GET Forbidden
+        return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
+
+@registered_user_only
+@brand_console
+def console_toggle_brand_active(request):
+    """
+    An API view to toggle brand activeness. Only ``verified`` brand's activeness can be toggled.
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+    if request.method.lower() == 'post':
+        brand = request.curr_brand
+
+        if brand.status == Brand.ST_VERIFIED:
+            active = True if request.POST['active'] == 'true' else False
+
+            brand.active = active
+            brand.save()
+            return ApiResponse(status=ApiResponse.ST_SUCCESS, message='Ok').gen_http_response()
+        else:
+            return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='You cannot change active property of unverified brand.').gen_http_response()
     else:
         # GET Forbidden
         return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
