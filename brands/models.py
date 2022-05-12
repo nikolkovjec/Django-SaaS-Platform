@@ -15,6 +15,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.contrib.auth.models import User
 import uuid
+import shortuuid
 import StringIO
 import os
 from django.core.files.uploadedfile import InMemoryUploadedFile,SimpleUploadedFile
@@ -44,9 +45,13 @@ def upload_brand_icon_to(instance, filename):
         filename = new_filename #filename.replace(" ","_")
     )
 def upload_brand_theme_file_to(instance, filename):
+    id = str(shortuuid.ShortUUID().random(length=10))
+    fname, ext = os.path.splitext(filename)
+    new_filename = "theme_{}.{}".format(id, ext.replace('.',''))
+
     return "brands/{brand_uid}/{filename}".format(
         brand_uid = str(instance.brand_uid),
-        filename = filename.replace(" ","_")
+        filename = new_filename #filename.replace(" ","_")
     )
 
 class Brand(models.Model):
@@ -492,6 +497,10 @@ class BrandChangeRequest(models57.Model):
           incorrect or invalid, entire request is rejected and user must request again with valid data.
         - In case of rejection, reason is mandatory.
 
+    **State chart diagram for brand status**:
+
+        .. image:: ../../_static/brands/brand_change_req_statechart.jpg
+
     .. warning::
         This model is **not audit** trail for :class:`brands.models.Brand` model. This only logs
         changes requested by the user and migrate it Brand model after acceptance.
@@ -516,8 +525,8 @@ class BrandChangeRequest(models57.Model):
 
     data_changes = JSONField(editable=False, help_text="Change request data in JSON form. These are mapped to 'Brand' model.")
 
-    status      = models.CharField(max_length=16, default=ST_NEW, choices=CH_STATUS, help_text='Status of this request.')
-    remarks     = tinymce_models.HTMLField(null=True, blank=True, help_text='Reason for rejecting this request. This is shown to the user.')
+    status      = FSMField(default=ST_NEW, choices=CH_STATUS, protected=True, db_index=True, editable=False, help_text='Status of this request.')
+    remarks     = tinymce_models.HTMLField(null=True, blank=True, help_text='Remarks related to this request. In case of rejection & oudated, this is shown to the user.')
 
     created_on  = models.DateTimeField(auto_now_add=True, editable=False, db_index=True, help_text='Date on which this record was created.')
     modified_on = models.DateTimeField(null=True, blank=True, editable=False, help_text='Date on which this record was modified.')
@@ -527,6 +536,44 @@ class BrandChangeRequest(models57.Model):
 
     def __unicode__(self):
         return "{} - {}".format(self.brand.name, self.id)
+
+    # --- Transitions ---
+    @fsm_log_by
+    @transition(field=status, source=ST_NEW, target=ST_SUCCESS)
+    def trans_success(self, remarks=None):
+        """
+        Transition edge to transit change request status to success.
+        Please note that this is only transition method. All major operation
+        must be handled separately.
+
+        **Authors**: Gagandeep Singh
+        """
+        self.remarks = remarks
+
+    @fsm_log_by
+    @transition(field=status, source=ST_NEW, target=ST_OUTDATED)
+    def trans_outdated(self, remarks='This request was declined due to new request.'):
+        """
+        Transition edge to transit change request status to outdated.
+        This happens when new change request has come while there is already
+        pending change request.
+
+        **Authors**: Gagandeep Singh
+        """
+        self.remarks = remarks
+
+    @fsm_log_by
+    @transition(field=status, source=ST_NEW, target=ST_REJECTED)
+    def trans_rejected(self, remarks):
+        """
+        Transition edge to transit change request status to rejected.
+        This happens when change request was found invalid/incorrect.
+
+        **Authors**: Gagandeep Singh
+        """
+        self.remarks = remarks
+
+    # --- /Transitions ---
 
     def clean(self):
         """
@@ -538,7 +585,7 @@ class BrandChangeRequest(models57.Model):
         if self.brand.status != Brand.ST_VERIFIED:
             raise ValidationError('You can log changes for verified brand only.')
 
-        if self.status == BrandChangeRequest.ST_REJECTED:
+        if self.status in [BrandChangeRequest.ST_OUTDATED, BrandChangeRequest.ST_REJECTED]:
             if self.remarks in [None, '']:
                 raise ValidationError('Please provide rejection reason.')
 
