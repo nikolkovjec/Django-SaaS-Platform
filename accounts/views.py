@@ -13,6 +13,9 @@ import ujson
 
 from django.contrib.auth.models import User
 
+from rest_framework import viewsets, status, response
+from utilities.fcm_utils import UserDeviceSerializer
+
 from accounts.forms import *
 from accounts.models import *
 from accounts.utils import *
@@ -652,6 +655,49 @@ def recover_account(request):
 
 #  ---------- /Password recovery ----------
 
+# ---------- User devices (FCM) ----------
+class UserDeviceViewSet(viewsets.ModelViewSet):
+    """
+    View to register or de-register user device for Google Firebase Cloud Messaging (FCM).
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+    queryset = UserDevice.objects.all()
+    serializer_class = UserDeviceSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=False)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return response.Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        try:
+            device = UserDevice.objects.get(dev_id=serializer.data["dev_id"])
+        except UserDevice.DoesNotExist:
+            device = UserDevice(dev_id=serializer.data["dev_id"])
+        device.is_active = True
+        device.reg_id = serializer.data["reg_id"]
+        device.name = serializer.data["name"]
+        device.user = User.objects.get(id=serializer.data["user"])
+        device.save()
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = UserDevice.objects.get(dev_id=kwargs["pk"])
+            self.perform_destroy(instance)
+            return response.Response(status=status.HTTP_200_OK)
+        except UserDevice.DoesNotExist:
+            return response.Response(status=status.HTTP_404_NOT_FOUND)
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save()
+# ---------- /User devices (FCM) ----------
+
 
 # ==================== Console ====================
 @registered_user_only
@@ -671,6 +717,111 @@ def console_account_settings(request):
         "user_profile": registered_user.profile
     }
     return render(request, 'accounts/console/account_settings.html', data)
+
+@registered_user_only
+def console_account_settings_email_change(request):
+    """
+    An API view to change user email address.
+
+    **Points**:
+        1. Delete all previous email verification token if any.
+        2. Create email verification token.
+        3. Create json-web-token having new email address, registered user id.
+        4. Form a verification link
+        5. Send email owl to the new email address.
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+    if request.method.lower() == 'post':
+        reg_user = request.user.registereduser
+        new_email = request.POST['new_email']
+
+        with transaction.atomic():
+            # Delete all previous email verification token
+            UserToken.objects.filter(registered_user=reg_user, purpose=UserToken.PUR_EMAIL_VERIF).delete()
+
+            # Create email verification token
+            user_token = UserToken.objects.create(
+                registered_user = reg_user,
+                purpose = UserToken.PUR_EMAIL_VERIF
+            )
+
+            # Create json-web-token
+            json_web_token = jwt.encode(
+                {
+                    'reg_user_id': reg_user.id,
+                    'new_email': new_email,
+                    'user_token_id': user_token.id
+                },
+                settings.JWT_SECRET_KEY,
+                algorithm = settings.JWT_ALOG
+            )
+
+            # Create url
+            url = "{}{}".format(settings.FEEDVAY_DOMAIN, reverse('accounts_verify_email', args=[json_web_token]))
+
+            # Send email owl
+            owls.EmailOwl.send_email_verification(reg_user, user_token, url, new_email)
+
+            return ApiResponse(status=ApiResponse.ST_SUCCESS, message='ok').gen_http_response()
+    else:
+        # GET Forbidden
+        return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
+
+
+def verify_email(request, web_token):
+    """
+    View to verify email and update it to the registered user account.
+
+    **Points**:
+
+        - Decode json-web-token to obtain data
+        - Verify with UserToken if it is within expiry time
+        - Update email for registeredUser
+        - Delete user token
+        - Log him in and redirect to account settings if already logged in
+          Else show success message.
+
+    **Type**: GET
+
+    **Authors**: Gagandeep Singh
+    """
+    # Decode web token
+    data = jwt.decode(web_token, settings.JWT_SECRET_KEY)
+    reg_user = RegisteredUser.objects.get(id=data["reg_user_id"])
+    new_email = data['new_email']
+
+    now = timezone.now()
+    try:
+        # Verify token
+        user_token = UserToken.objects.get(registered_user=reg_user, purpose=UserToken.PUR_EMAIL_VERIF, expire_on__gt=now)
+
+        # Update email for RegisteredUser
+        profile = reg_user.profile
+        profile.add_update_attribute('email', new_email, auto_save=False)
+        profile.mark_attribute_verification('email', True, 'User verified email through verification process.', auto_save=False)
+        profile.save()
+
+        # Delete user token
+        user_token.delete()
+
+        # Return response
+        if request.user.is_authenticated():
+            # User is already logged in, redirect to accounts settings
+            return HttpResponseRedirect(reverse('console_accounts_settings')+"#/profile")
+        else:
+            country_tel_code = '+91'    #TODO: Set default country_tel_code
+            data = {
+                "new_email": new_email,
+                "username": RegisteredUser.deconstruct_username(country_tel_code, reg_user.user.username)
+            }
+            return render(request, 'accounts/email_verification_success.html', data)
+
+    except UserToken.DoesNotExist:
+        raise Http404("Invalid or expired link! Please login and edit your email again.")
+
 
 @registered_user_only
 def console_password_change(request):

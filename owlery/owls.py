@@ -413,6 +413,50 @@ class EmailOwl:
             return None
 
     @staticmethod
+    def send_email_verification(reg_user, user_token, verif_url, email_address):
+        """
+        Method to send a verification link to newely added email address.
+
+        :param reg_user: RegisteredUser to whom email is send
+        :param user_token: User token for email verification
+        :param verif_url: Verification url
+        :param email_address: New email address to which link is to be send
+        :return: Returns :class:`owlery.model.EmailMessage` instance
+
+        **Authors**: Gagandeep Singh
+        """
+        user = reg_user.user
+        receiver_name = "{} {}".format(user.first_name, user.last_name)
+
+        # Create message body
+        message_body = render_to_response('owlery/owls/emails/email_verification.html', {
+            "receiver_name": receiver_name,
+            "url": verif_url,
+            "expire_min": (settings.VERIFICATION_EXPIRY/60),
+            "expire_time": user_token.humanize_expire_on("%I:%M %p")
+        }).content
+
+        # Create database entry
+        email_msg = EmailMessage.objects.create(
+            username = user.username,
+            email_id = email_address,
+
+            subject = "Feedvay - Email verification",
+            message = message_body,
+
+            type = EmailMessage.TYPE_EMAIL_VERIF,
+            priority = EmailMessage.PR_URGENT
+        )
+
+        # Send email since it is an urgent message
+        try:
+            email_msg.force_send()
+        except:
+            pass
+
+        return email_msg
+
+    @staticmethod
     def send_brand_disassociation_success(user, brand):
         """
         Sends confirmation email to user' disassociation from a brand.
@@ -806,8 +850,9 @@ class NotificationOwl:
                 # Create entry
                 notif_msg = NotificationMessage.objects.create(
                     target = NotificationMessage.TARGET_USER,
-                    transmission = NotificationMessage.TRANSM_UNICAST,
+                    transmission = NotificationMessage.TRANSM_MULTICAST,
                     type = NotificationMessage.TYPE_BRAND_PARTNER_LEFT,
+                    title = '{} left {}'.format(reg_user_disass.user.first_name, brand.name),
                     message = message_body,
                     url_web = "/console/b/{}/settings/#/ownership".format(brand.brand_uid),
                     priority = NotificationMessage.PR_HIGH
@@ -821,7 +866,10 @@ class NotificationOwl:
                     ) for owner in brand.owners.all()
                 ])
 
-                return notif_msg
+            # Send notification
+            notif_msg.force_send()
+
+            return notif_msg
         else:
             return None
 
@@ -849,8 +897,9 @@ class NotificationOwl:
                 # Create entry
                 notif_msg = NotificationMessage.objects.create(
                     target = NotificationMessage.TARGET_USER,
-                    transmission = NotificationMessage.TRANSM_UNICAST,
+                    transmission = NotificationMessage.TRANSM_MULTICAST,
                     type = NotificationMessage.TYPE_BRAND_CHNG_REQ,
+                    title = '{} changes under process'.format(brand.name),
                     message = message_body,
                     url_web = url_web,
                     priority = NotificationMessage.PR_HIGH
@@ -864,7 +913,10 @@ class NotificationOwl:
                     ) for owner in brand.owners.all()
                 ])
 
-                return notif_msg
+            # Send notification
+            notif_msg.force_send()
+
+            return notif_msg
         else:
             return None
 
@@ -891,8 +943,9 @@ class NotificationOwl:
                 # Create entry
                 notif_msg = NotificationMessage.objects.create(
                     target = NotificationMessage.TARGET_USER,
-                    transmission = NotificationMessage.TRANSM_UNICAST,
+                    transmission = NotificationMessage.TRANSM_MULTICAST,
                     type = NotificationMessage.TYPE_BRAND_VERIFIED,
+                    title = '{} verified'.format(brand.name),
                     message = message_body,
                     url_web = url_web,
                     priority = NotificationMessage.PR_HIGH
@@ -906,7 +959,10 @@ class NotificationOwl:
                     ) for owner in brand.owners.all()
                 ])
 
-                return notif_msg
+            # Send notification
+            notif_msg.force_send()
+
+            return notif_msg
         else:
             return None
 
@@ -933,8 +989,9 @@ class NotificationOwl:
                 # Create entry
                 notif_msg = NotificationMessage.objects.create(
                     target = NotificationMessage.TARGET_USER,
-                    transmission = NotificationMessage.TRANSM_UNICAST,
+                    transmission = NotificationMessage.TRANSM_MULTICAST,
                     type = NotificationMessage.TYPE_BRAND_VERIF_FAILED,
+                    title = '{} verification failed'.format(brand.name),
                     message = message_body,
                     url_web = url_web,
                     priority = NotificationMessage.PR_URGENT
@@ -948,8 +1005,10 @@ class NotificationOwl:
                     ) for owner in brand.owners.all()
                 ])
 
-                return notif_msg
+            # Send notification
+            notif_msg.force_send()
 
+            return notif_msg
         else:
             return None
 
@@ -977,8 +1036,9 @@ class NotificationOwl:
                 # Create entry
                 notif_msg = NotificationMessage.objects.create(
                     target = NotificationMessage.TARGET_USER,
-                    transmission = NotificationMessage.TRANSM_UNICAST,
+                    transmission = NotificationMessage.TRANSM_MULTICAST,
                     type = NotificationMessage.TYPE_BRAND_CHNG_REQ_REJ,
+                    title = '{} change rejected'.format(brand.name),
                     message = message_body,
                     url_web = url_web,
                     priority = NotificationMessage.PR_URGENT
@@ -992,8 +1052,10 @@ class NotificationOwl:
                     ) for owner in brand.owners.all()
                 ])
 
-                return notif_msg
+            # Send notification
+            notif_msg.force_send()
 
+            return notif_msg
         else:
             return None
 
@@ -1021,8 +1083,9 @@ class NotificationOwl:
                 # Create entry
                 notif_msg = NotificationMessage.objects.create(
                     target = NotificationMessage.TARGET_USER,
-                    transmission = NotificationMessage.TRANSM_UNICAST,
+                    transmission = NotificationMessage.TRANSM_MULTICAST,
                     type = NotificationMessage.TYPE_BRAND_CHNG_REQ_ACC,
+                    title = '{} change accepted'.format(brand.name),
                     message = message_body,
                     url_web = url_web,
                     priority = NotificationMessage.PR_URGENT
@@ -1036,8 +1099,10 @@ class NotificationOwl:
                     ) for owner in brand.owners.all()
                 ])
 
-                return notif_msg
+            # Send notification
+            notif_msg.force_send()
 
+            return notif_msg
         else:
             return None
 
