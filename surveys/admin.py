@@ -45,6 +45,7 @@ class SurveyPhaseInline(admin.TabularInline):
     **Authors**: Gagandeep Singh
     """
     model = SurveyPhase
+    raw_id_fields = ('form', )
 
     def get_readonly_fields(self, request, obj=None):
         readonly_fields = [field.name for field in self.model._meta.fields if not field.editable]
@@ -78,13 +79,13 @@ class SurveyAdmin(admin.ModelAdmin):
             'fields': ('surveyor_type', 'brand')
         }),
         ('Audience', {
-            'fields': ('audience_type', 'audience_filters')
+            'fields': ('audience_type', 'audience_filters', 'audience_cease')
         }),
         ('Status', {
             'fields': ('status', )
         }),
         ('Miscellaneous', {
-            'fields': ('created_by', 'created_on', 'modified_on')
+            'fields': ('qrcode', 'created_by', 'created_on', 'modified_on')
         }),
     )
 

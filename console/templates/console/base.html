@@ -17,7 +17,7 @@
 
     <link href="{% get_static_prefix %}ui/css/plugins/awesome-bootstrap-checkbox/awesome-bootstrap-checkbox.css" rel="stylesheet">
     <link href="{% get_static_prefix %}lib/growl/jquery.growl.css" rel="stylesheet">
-    <link href="{% get_static_prefix %}ui/css/plugins/summernote/summernote.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% get_static_prefix %}lib/summernote/summernote.css">
     <link href="{% get_static_prefix %}ui/css/plugins/datapicker/angular-datapicker.css" rel="stylesheet">
     <link href="{% get_static_prefix %}ui/css/plugins/ladda/ladda-themeless.min.css" rel="stylesheet">
 
@@ -126,12 +126,9 @@
                                 </ul>
                             </li>
                             <li class="dropdown">
-                                <a aria-expanded="false" role="button" href="javascript: void(0);" class="dropdown-toggle" data-toggle="dropdown"> Menu item <span class="caret"></span></a>
+                                <a aria-expanded="false" role="button" href="javascript: void(0);" class="dropdown-toggle" data-toggle="dropdown"> Surveys <span class="caret"></span></a>
                                 <ul role="menu" class="dropdown-menu">
-                                    <li><a href="">Menu item</a></li>
-                                    <li><a href="">Menu item</a></li>
-                                    <li><a href="">Menu item</a></li>
-                                    <li><a href="">Menu item</a></li>
+                                    <li><a href="{% url 'console_surveys' %}">My surveys</a></li>
                                 </ul>
                             </li>
                             <li class="dropdown">
@@ -256,12 +253,12 @@
             <!-- /Header -->
 
             <!-- Content -->
-            <div class="wrapper wrapper-content">
-                <div class="container">
+{#            <div class="wrapper wrapper-content">#}
+{#                <div class="container">#}
                     {% block content %}
                     {% endblock %}
-                </div>
-            </div>
+{#                </div>#}
+{#            </div>#}
             <!-- /Content -->
             <![endif]-->
 
@@ -288,7 +285,7 @@
     <script src="{% get_static_prefix %}ui/js/bootstrap.min.js"></script>
     <script src="{% get_static_prefix %}ui/js/plugins/metisMenu/jquery.metisMenu.js"></script>
     <script src="{% get_static_prefix %}ui/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
-    <script src="{% get_static_prefix %}ui/js/plugins/summernote/summernote.min.js"></script>
+    <script src="{% get_static_prefix %}lib/summernote/summernote.min.js"></script>
 
 
     <!-- Custom and plugin javascript -->
@@ -303,7 +300,7 @@
     <script src="{% get_static_prefix %}ui/js/angular/angular-sanitize.min.js"></script>
     <script src="{% get_static_prefix %}ui/js/bootstrap/ui-bootstrap-tpls-1.1.2.min.js"></script>
     <script src="{% get_static_prefix %}ui/js/plugins/oclazyload/dist/ocLazyLoad.min.js"></script>
-    <script src="{% get_static_prefix %}ui/js/plugins/summernote/angular-summernote.min.js"></script>
+    <script src="{% get_static_prefix %}lib/summernote/angular/angular-summernote.min.js"></script>
 {#    <script src="{% get_static_prefix %}ui/js/plugins/datapicker/angular-datepicker.js"></script>#}
     <script src="{% get_static_prefix %}lib/angular/angular-datepicker/angular-datepicker.js"></script>
     <script src="{% get_static_prefix %}ui/js/plugins/ladda/spin.min.js"></script>
@@ -311,7 +308,9 @@
     <script src="{% get_static_prefix %}ui/js/plugins/ladda/angular-ladda.min.js"></script>
 
     <!-- Feedvay angular apps -->
+    <script src="{% get_static_prefix %}js/common.js"></script>
     <script src="{% get_static_prefix %}ui/js/custom.js"></script>
+    <script src="{% get_static_prefix %}apps/app_ui.js"></script>
     <script src="{% get_static_prefix %}apps/app_common.js"></script>
     <script src="{% get_static_prefix %}apps/watchdog/watchdog.js"></script>
 

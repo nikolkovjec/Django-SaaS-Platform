@@ -57,6 +57,11 @@
     background-position: center center;
 }
 
+.list_md_icon{
+    width: 16px;
+    margin-right: 2px;
+}
+
 /* ----- form loader ----- */
 .form-loading, .ps-container:hover.ps-in-scrolling.ps-in-scrolling, .ps-in-scrolling {
     pointer-events: none
@@ -297,6 +302,109 @@
     text-decoration: underline;
 }
 /* ----- /Top alert strip ----- */
+
+.code_highlight > pre{
+    padding: 0px;
+    border: none;
+    background: none;
+    margin: 0px;
+}
+
+.custom_tooltip{
+    cursor: help;
+}
+
+/* ----- Sentencify ----- */
+.identifier{
+    font-weight: 600;
+}
+/*.identifier > a{*/
+    /*color: inherit;*/
+    /*font-weight: inherit;*/
+    /*font-style: inherit;*/
+/*}*/
+/*.identifier > a:hover{*/
+    /*text-decoration: underline;*/
+/*}*/
+
+.operator{
+    font-style: italic;
+}
+
+.string{
+    color: #178000;
+}
+
+
+.number{
+    color: #1a1aa6;
+}
+/* ----- Sentencify ----- */
+
+/* ----- Admin Content with left tabs ----- */
+.wrapper_admin_content{
+    /*border: solid 1px #000000;*/
+    margin: 0px -15px;
+    height: 100%;
+    min-width: 800px;
+}
+
+table.table_tab_admin{
+    width: 100%;
+    max-width: 100%;
+    display: table;
+    border-spacing: 0;
+    border-collapse: collapse;
+    border-bottom: solid 1px #e7eaec;
+}
+
+td.admin_tabs{
+    width: 220px;
+    /*border-right: solid 1px #e7eaec;*/
+}
+
+td.admin_content{
+    padding: 10px 20px;
+    background-color: #f9f9f9;
+    border-left: solid 1px #e7eaec;
+}
+
+.list_group_tabs{
+    margin-bottom: 0px;
+    background-color: #ffffff !important;
+}
+
+.list_group_tabs > .list-group-item{
+    border-radius: 0px !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+.list_group_tabs > .list-group-item:first-child{
+    border-top: none;
+}
+.list_group_tabs > .list-group-item:hover{
+    font-weight: 600 !important;
+}
+
+.list_group_tabs > .list-group-item.active{
+    background-color: #dcdcdc !important;
+    border-color: #dcdcdc !important;
+    color: #5e5e5e !important;
+    font-weight: 600 !important;
+}
+
+.list_group_tabs > .list-group-item.active:before {
+   content:"";
+   position: absolute;
+   top: 10px;
+   right: -2px;
+   width: 0;
+   height: 0;
+   border-top: 8px solid transparent;
+   border-right: 12px solid #f9f9f9; /*#f3f3f4;*/
+   border-bottom: 8px solid transparent;
+}
+/* ----- /Admin Content with left tabs ----- */
 
 /* =============== Desktop =============== */
 @media (min-width: 767px) {

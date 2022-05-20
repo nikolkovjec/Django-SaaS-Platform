@@ -20,7 +20,9 @@
 {% endblock %}
 
 {% block content %}
-    <div ng-controller="MainCtrl" class="animated fadeInRight" ng-cloak>
+    <div class="wrapper wrapper-content">
+        <div class="container">
+            <div ng-controller="MainCtrl" class="animated fadeInRight" ng-cloak>
 
         <div class="tabs-container">
             <div class="tabs-left">
@@ -47,6 +49,8 @@
         </div>
 
     </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block scripts %}
@@ -55,6 +59,7 @@
         'use strict';
 
         var APP = angular.module('{{ app_name }}',[
+            'feedvay.uiapp',
             'feedvay.common',
             'feedvay.watchdog',
 
