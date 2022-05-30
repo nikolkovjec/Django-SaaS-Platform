@@ -9,6 +9,8 @@ from django_mysql import models as models57
 from django_fsm import FSMField, transition
 from django_fsm_log.decorators import fsm_log_by
 
+from mongoengine.fields import *
+
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 import shortuuid
@@ -20,7 +22,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 
 from accounts.models import RegisteredUser
 from brands.models import Brand
-from form_builder.models import Form
+from form_builder.models import Form, BaseResponse
 
 class SurveyTag(models.Model):
     """
@@ -33,6 +35,9 @@ class SurveyTag(models.Model):
 
     created_on  = models.DateTimeField(auto_now_add=True, editable=False, db_index=True, help_text='Date on which this record was created.')
     modified_on = models.DateTimeField(null=True, blank=True, editable=False, help_text='Date on which this record was modified.')
+
+    class Meta:
+        ordering = ('name', )
 
     def __unicode__(self):
         return self.name
@@ -78,6 +83,7 @@ class SurveyCategory(models.Model):
     modified_on = models.DateTimeField(null=True, blank=True, editable=False, help_text='Date on which this record was modified.')
 
     class Meta:
+        ordering = ('name', )
         verbose_name_plural = 'Survey categories'
 
     def __unicode__(self):
@@ -169,12 +175,12 @@ class Survey(models.Model):
     )
 
     ST_DRAFT = 'draft'
-    ST_PUBLISHED = 'published'
+    ST_READY = 'ready'
     ST_PAUSED = 'paused'
     ST_STOPPED = 'stopped'
     CH_STATUS = (
         (ST_DRAFT, 'Draft'),
-        (ST_PUBLISHED, 'Published'),
+        (ST_READY, 'Ready'),
         (ST_PAUSED, 'Paused'),
         (ST_STOPPED, 'Stopped')
     )
@@ -200,7 +206,6 @@ class Survey(models.Model):
     # Audience
     audience_type    = models.CharField(max_length=16, default=None, choices=CH_AUDIENCE, help_text='Type of the target audience.')
     audience_filters = models57.JSONField(default=None, blank=True, null=True, help_text='Expression to filter the audience. (Only for public & invited)')
-    audience_cease   = models.BooleanField(verbose_name='Cease further audience', default=False, help_text='Switch to stop new audience that is, if checked will not allow new user to open survey.')
 
     # Status
     status      = FSMField(default=ST_DRAFT, choices=CH_STATUS, protected=True, help_text='Status of the survey')
@@ -220,18 +225,19 @@ class Survey(models.Model):
 
     # --- Transitions ---
     @fsm_log_by
-    @transition(field=status, source=ST_DRAFT, target=ST_PUBLISHED)
-    def trans_publish(self):
+    @transition(field=status, source=ST_DRAFT, target=ST_READY)
+    def trans_ready(self):
         """
         Transition edge to publish a survey. On publishing, survey is active & will automatically start
         as per ``start_date`` & ``end_date``.
 
         **Authors**: Gagandeep Singh
         """
-        pass
+        if not self.surveyphase_set.all().count():
+            raise Exception("Denied! This survey must have atleast one phase.")
 
     @fsm_log_by
-    @transition(field=status, source=ST_PUBLISHED, target=ST_PAUSED)
+    @transition(field=status, source=ST_READY, target=ST_PAUSED)
     def trans_pause(self):
         """
         Transition edge to pause a survey after it has been published. Puases survey are not executable.
@@ -242,7 +248,7 @@ class Survey(models.Model):
         pass
 
     @fsm_log_by
-    @transition(field=status, source=ST_PAUSED, target=ST_PUBLISHED)
+    @transition(field=status, source=ST_PAUSED, target=ST_READY)
     def trans_resume(self):
         """
         Transition edge to resume a paused survey. After resuming, it will be visible to public.
@@ -252,7 +258,7 @@ class Survey(models.Model):
         pass
 
     @fsm_log_by
-    @transition(field=status, source=[ST_PUBLISHED,ST_PAUSED], target=ST_STOPPED)
+    @transition(field=status, source=[ST_READY,ST_PAUSED], target=ST_STOPPED)
     def trans_stop(self):
         """
         Transition edge to stop a survey. A survey after stop cannot be restarted.
@@ -334,7 +340,8 @@ class Survey(models.Model):
             if self.brand is None:
                 raise ValidationError("Please select brand surveyor.")
         elif self.surveyor_type == Survey.SURVYR_INDIVIDUAL:
-            pass
+            if self.type != Survey.TYPE_SIMPLE:
+                raise ValidationError("Only simple surveys are allowed for individuals.")
         else:
             ValidationError("Invalid surveyor type '{}'.".format(self.surveyor_types))
 
@@ -433,3 +440,19 @@ class SurveyPhase(models.Model):
         super(self.__class__, self).save(*args, **kwargs)
 
 
+class SurveyResponse(BaseResponse):
+    """
+    Model to store a survey response. It inherits all properties of :class:`form_builder.models.BaseResponse`.
+
+    **Authors**: Gagandeep Singh
+    """
+
+    survey_uid  = StringField(required=True, help_text='Survey uid for which response is recorded.')
+    phase_id    = StringField(required=True, help_text='Survey phase id (pk) which has been responded.')
+
+    meta = {
+        'indexes':[
+            'survey_uid',
+            'phase_id'
+        ]
+    }
