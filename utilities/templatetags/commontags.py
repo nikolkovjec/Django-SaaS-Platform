@@ -4,6 +4,7 @@
 
 from django import template
 import ujson
+from django.contrib.auth.models import User
 
 register = template.Library()
 
@@ -22,7 +23,7 @@ def jsonify(obj):
 @register.filter
 def get_item(dictionary, key):
     """
-    Djago template tag to get value for a key in a dictionary.
+    Django template tag to get value for a key in a dictionary.
 
     :param dictionary: Dictionary object
     :param key: Key to lookup
@@ -31,3 +32,57 @@ def get_item(dictionary, key):
     **Authors**: Gagandeep Singh
     """
     return dictionary.get(key)
+
+@register.filter
+def get_user_readable(user_id, display_format):
+    """
+    Django templatetag that converts user id into readable user name.
+
+    :param user_id: :class:`django.contrib.auth.models.User` instance id
+    :param display_format: Display format: \*, username, full_name, first_name
+    :return: Display string
+
+    **Authors**: Gagandeep Singh
+    """
+    s = ''
+    try:
+        user = User.objects.get(id=user_id)
+
+        if display_format == 'full_name':
+            s = "{} {}".format(user.first_name, user.last_name)
+        elif display_format == 'username':
+            s = user.username
+        elif display_format == 'first_name':
+            s = user.first_name
+        elif display_format == '*':
+            s = '{} {} ({})'.format(user.first_name, user.last_name, user.username)
+    except User.DoesNotExist:
+        pass
+
+    return s
+
+@register.filter
+def get_python_type(obj, format_type):
+    """
+    Returns python type of the object.
+    :param obj: Object
+    :param format_type: None- Python class, 'name'- string name
+    :return: Python type
+
+    **Authors**: Gagandeep Singh
+    """
+    t = type(obj)
+
+    return t if format_type is None else t.__name__
+
+@register.filter
+def multiply(value, multiplier):
+    """
+    Returns multiplication value and multiplier.
+    :param value: Value
+    :param multiplier: None- Python class, 'name'- string name
+    :return: value*multiplier
+
+    **Authors**: Gagandeep Singh
+    """
+    return value*multiplier

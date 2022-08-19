@@ -236,6 +236,9 @@ class Survey(models.Model):
         if not self.surveyphase_set.all().count():
             raise Exception("Denied! This survey must have atleast one phase.")
 
+        if self.surveyphase_set.filter(form__is_ready=False).exists():
+            raise Exception("Denied! Please complete your questionnaire(s).")
+
     @fsm_log_by
     @transition(field=status, source=ST_READY, target=ST_PAUSED)
     def trans_pause(self):
@@ -255,7 +258,11 @@ class Survey(models.Model):
 
         **Authors**: Gagandeep Singh
         """
-        pass
+        if not self.surveyphase_set.all().count():
+            raise Exception("Denied! This survey must have atleast one phase.")
+
+        if self.surveyphase_set.filter(form__is_ready=False).exists():
+            raise Exception("Denied! Please complete your questionnaire(s).")
 
     @fsm_log_by
     @transition(field=status, source=[ST_READY,ST_PAUSED], target=ST_STOPPED)
@@ -318,6 +325,15 @@ class Survey(models.Model):
         if auto_save:
             self.save()
 
+
+    def has_gps_enabled(self):
+        """
+        Method to tell if this survey has any survey phase that has gps enabled.
+        :return: True/False
+
+        **Authors**: Gagandeep Singh
+        """
+        return Form.objects.filter(gps_enabled=True, id__in=SurveyPhase.objects.filter(survey_id=self.id).values_list('form', flat=True)).exists()
 
     def clean(self):
         """
@@ -456,3 +472,7 @@ class SurveyResponse(BaseResponse):
             'phase_id'
         ]
     }
+
+    @property
+    def phase(self):
+        return SurveyPhase.objects.get(id=self.phase_id)

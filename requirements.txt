@@ -26,6 +26,11 @@ django-colorful
 django-tree-tag
 # Pillow
 qrcode
+indicoio
+
+pyopenssl
+ndg-httpsclient
+pyasn1
 
 
 

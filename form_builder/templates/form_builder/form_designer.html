@@ -5,7 +5,11 @@
 {% load static commontags %}
 
 {% block head %}
-    <title>{% if form %}Edit{% else %}New{% endif %} Form | FormPOC</title>
+    <title>
+        {% if TYPE == 'SURVEY' %}
+            Edit {{ survey.title }} | Feedvay
+        {% endif %}
+    </title>
 
     <link href="{% get_static_prefix %}lib/bootstrap_3/css/bootstrap-addons.css" rel="stylesheet">
     <link href="{% get_static_prefix %}lib/select2/css/select2.css" rel="stylesheet">
@@ -200,24 +204,40 @@
 {% endblock %}
 
 {% block page_header %}
-    <div class="row wrapper border-bottom white-bg page-heading">
-        <div class="col-xs-12">
-            <h2>Design Form</h2>
-            <ol class="breadcrumb">
-                <li>
-                    <a href="{% url 'console_home' %}">Home</a>
-                </li>
-                <li>Forms</li>
-                <li class="active">
-                    Design
-                </li>
-            </ol>
+    <div class="row wrapper border-bottom white-bg page-heading" ng-controller="SaveController">
+        <div class="col-xs-10">
+            {% if TYPE == 'SURVEY' %}
+                <h2>{{ survey.title }}</h2>
+
+                <ol class="breadcrumb">
+                    <li>
+                        <a href="{% url 'console_home' %}">Home</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'console_surveys' %}">Surveys</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'console_survey_panel' survey.survey_uid %}">{{ survey.title }}</a>
+                    </li>
+                    <li class="active">
+                        Questionnaire
+                    </li>
+                </ol>
+            {% endif %}
+        </div>
+        <div class="col-xs-2">
+            <div class="title-action" style="padding-top: 20px !important;">
+                <button class="btn btn-primary ladda-button" ladda="flags.loading" data-style="zoom-in" ng-click="save_continue()">
+{#                    <i class="fa fa-save"></i>&nbsp;&nbsp;#}
+                    Save & continue
+                </button>
+            </div>
         </div>
     </div>
 {% endblock %}
 
 {% block content %}
-    <div class="wrapper wrapper-content">
+    <div class="wrapper wrapper-content" style="padding-top: 20px;">
         <div class="container">
                 <div ng-cloak>
                 <!-- Modals Templates -->
@@ -389,6 +409,25 @@
                     </form>
                 </script>
                 <!-- /Modals Templates -->
+
+
+                <div class="alert alert-warning" ng-if="!IS_READY" ng-controller="MsgController">
+                    <table style="width: 100%">
+                        <tr>
+                            <td valign="top" style="width: 60px;">
+                                <i class="fa fa-exclamation-triangle" style="font-size: 40px;"></i>
+                            </td>
+                            <td valign="top">
+                                <h3 style="margin-top: 0px;margin-bottom: 5px;">
+                                    Your questionnaire is not ready!
+                                </h3>
+                                <div>
+                                    Please add atleast one question to this questionnaire.
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
 
                 <div class="tabs-container animated fadeInRight">
                     <ul class="nav nav-tabs">
@@ -660,7 +699,7 @@
                                                         <td>
                                                             <div class="form-group" >
                                                                 <div class="checkbox checkbox-primary checkbox-inline">
-                                                                    <input id="fld_gps_enabled" type="checkbox" ng-model="FormData.gps_enabled">
+                                                                    <input id="fld_gps_enabled" type="checkbox" ng-model="FormData.gps_enabled" ng-click="FormData.gps_mandatory=False;">
                                                                     <label for="fld_gps_enabled">
                                                                         Enable location
                                                                     </label>
@@ -668,8 +707,8 @@
                                                             </div>
                                                             <div class="form-group">
                                                                 <div class="checkbox checkbox-primary checkbox-inline">
-                                                                    <input id="fld_gps_required" type="checkbox" ng-model="FormData.gps_required" ng-disabled="!FormData.gps_enabled">
-                                                                    <label for="fld_gps_required">
+                                                                    <input id="fld_gps_mandatory" type="checkbox" ng-model="FormData.gps_mandatory" ng-disabled="!FormData.gps_enabled">
+                                                                    <label for="fld_gps_mandatory">
                                                                         Make location mandatory.
                                                                         <br/>
                                                                         <small>
@@ -683,32 +722,32 @@
                                                             <div class="form-group">
                                                                 <label ng-class="{'disabled_text': !FormData.gps_enabled }">Precision:</label>
                                                                 <div style="margin-left: 20px;">
-                                                                    <div class="radio radio-primary radio-inline" ng-repeat="choice in gps_choices">
-                                                                        <input type="radio" id="rd_gps_{$ choice.id $}" name="gps_choice" ng-value="choice.id" ng-disabled="!FormData.gps_enabled" ng-model="FormData.gps_choice">
+                                                                    <div class="radio radio-primary radio-inline" ng-repeat="choice in gps_precision_choices">
+                                                                        <input type="radio" id="rd_gps_{$ choice.id $}" name="gps_precision" ng-value="choice.id" ng-disabled="!FormData.gps_enabled" ng-model="FormData.gps_precision">
                                                                         <label for="rd_gps_{$ choice.id $}">
                                                                             {$ choice.name $}
                                                                             <br><small>{$ choice.description $}</small>
                                                                         </label>
                                                                     </div>
 
-                                                                    <div ng-if="FormData.gps_choice" class="well" style="margin: 20px 0px 0px 0px;width: auto !important;" >
+                                                                    <div ng-if="FormData.gps_precision" class="well" style="margin: 20px 0px 0px 0px;width: auto !important;" >
                                                                         <div style="font-weight: 600;font-size: large;">
-                                                                            {$ selected_gps_choice.name $}
+                                                                            {$ selected_gps_precision.name $}
                                                                         </div>
-                                                                        <small>{$ selected_gps_choice.remarks $}</small>
+                                                                        <small>{$ selected_gps_precision.remarks $}</small>
                                                                         <hr style="margin: 5px 0px;"/>
                                                                         <div style="padding-left: 15px;">
                                                                             <p style="margin-bottom: 5px;">
-                                                                                <i class="fa  text-navy" ng-class="{'fa-location-arrow': selected_gps_choice.high_accuracy, 'fa-signal':!selected_gps_choice.high_accuracy }"></i>&nbsp;&nbsp;
-                                                                                Use <b>{$ selected_gps_choice.high_accuracy?'Satellite based methods':'Network based methods' $}</b> to retrieve location.
+                                                                                <i class="fa  text-navy" ng-class="{'fa-location-arrow': selected_gps_precision.high_accuracy, 'fa-signal':!selected_gps_precision.high_accuracy }"></i>&nbsp;&nbsp;
+                                                                                Use <b>{$ selected_gps_precision.high_accuracy?'Satellite based methods':'Network based methods' $}</b> to retrieve location.
                                                                             </p>
-                                                                            <p style="margin-bottom: 5px;" ng-if="selected_gps_choice.max_radius">
+                                                                            <p style="margin-bottom: 5px;" ng-if="selected_gps_precision.max_radius">
                                                                                 <i class="fa fa-street-view text-navy"></i>&nbsp;&nbsp;
-                                                                                Location must be within <b>{$ selected_gps_choice.max_radius $} meters</b> of radius.
+                                                                                Location must be within <b>{$ selected_gps_precision.max_radius $} meters</b> of radius.
                                                                             </p>
                                                                             <p style="margin-bottom: 5px;">
                                                                                 <i class="fa fa-history text-navy"></i>&nbsp;&nbsp;
-                                                                                Location must not be older than <b>{$ selected_gps_choice.max_age/1000 $} seconds</b>.
+                                                                                Location must not be older than <b>{$ selected_gps_precision.max_age/1000 $} seconds</b>.
                                                                             </p>
                                                                         </div>
                                                                     </div>
@@ -1112,7 +1151,7 @@
     <script src="{% get_static_prefix %}ui/js/plugins/jquery-ui/jquery-ui.min.js"></script>
 {#    <script src="{% get_static_prefix %}lib/summernote/summernote.min.js"></script>#}
     <script src="{% get_static_prefix %}lib/bootstrap_compenents/bootstrap-rating.js"></script>
-    <script src="{% get_static_prefix %}ui/js/plugins/select2/select2.full.min.js"></script>
+    <script src="{% get_static_prefix %}lib/select2/js/select2.min.js"></script>
     <script src="{% get_static_prefix %}lib/lexer/lex.js"></script>
     <script src="{% get_static_prefix %}lib/lexer/lexjs.js"></script>
     <script src="{% get_static_prefix %}lib/highlightjs/highlight.min.js"></script>
@@ -1162,7 +1201,8 @@
             'ui.sortable',
             'ui.tree',
             'hljs',
-            'oitozero.ngSweetAlert'
+            'oitozero.ngSweetAlert',
+            'angular-ladda',
         ]).config(function($interpolateProvider, $httpProvider, hljsServiceProvider) {
                 $interpolateProvider.startSymbol('{$');
                 $interpolateProvider.endSymbol('$}');
@@ -1238,6 +1278,7 @@
                     {% endfor %}
                 }
                 {% else %}{}{% endif %};
+                $rootScope.IS_READY = {% if form.is_ready %}true{% else %}false{% endif %};
                 $rootScope.FormData = {% if form %}{{ form.to_json|jsonify|safe }}{% else %}{schema:[]}{% endif %};
 
                 $rootScope.META_QUESTIONS = [];
@@ -1532,6 +1573,74 @@
             };
         });
 
+        // ---------- SaveController ----------
+        app.controller('MsgController', function($scope, $rootScope){
+
+        });
+
+        app.controller('SaveController', function($scope, $rootScope, $http, $window, SweetAlert){
+            $scope.flags = {
+                loading: false
+            };
+
+            $scope.save_continue = function(){
+                var data_form_data = angular.copy($rootScope.FormData);
+                var data_translation = angular.copy($rootScope.Translations);
+
+                {% if TYPE == 'SURVEY' %}
+                    $scope.flags.loading = true;
+                    return $http.post(
+                        '{% url 'console_survey_phase_form_save' survey.survey_uid phase.id %}',
+                        $.param({
+                            'form_data': JSON.stringify(data_form_data),
+                            'translations': JSON.stringify(data_translation)
+                        })
+                    ).then(
+                        function (response) {
+                            $scope.flags.loading = false;
+                            console.log(response);
+
+                            if (response.data.status == 'success') {
+                                $rootScope.IS_READY = response.data.is_ready;
+
+                                SweetAlert.swal({
+                                    title: "Saved!",
+                                    text: "Your questionnaire has been saved. <br/>Refreshing now ...",
+                                    type: "success",
+                                    html: true,
+                                    showConfirmButton: false
+                                });
+
+                                $window.location.reload();
+                            }else{
+                                SweetAlert.swal({
+                                    title: "Unable to save changes!",
+                                    text: response.data.message,
+                                    type: "error",
+                                    html: true,
+                                });
+                            }
+                        },
+                        function (response){
+{#                            $scope.flags.loading = false;#}
+                            if (response.status != -1) {
+                                $.growl.error({
+                                    title: '<i class="fa fa-exclamation-triangle"></i> Error!',
+                                    message: 'Something went wrong. Our engineers will be informed.'
+                                });
+                            } else {
+                                $.growl.error({
+                                    title: '<i class="fa fa-signal"></i> Network error!',
+                                    message: "Please check your internet connection."
+                                });
+                            }
+                        }
+                    );
+                {% endif %}
+
+            }
+        });
+
         // ---------- GeneralController ----------
         app.controller('GeneralController',function($scope, $rootScope){
             $scope.edit_description = function(){
@@ -1589,13 +1698,13 @@
                 mousewheel: false,
             };
 
-            $scope.gps_choices = {{ GeoLocation.get_choices|jsonify|safe }};
-            $scope.selected_gps_choice = null;
+            $scope.gps_precision_choices = {{ GeoLocation.get_choices|jsonify|safe }};
+            $scope.selected_gps_precision = null;
 
-            $rootScope.$watch('FormData.gps_choice', function(newValue, oldValue) {
-                for(var i in $scope.gps_choices){
-                    if($scope.gps_choices[i]["id"]==newValue){
-                        $scope.selected_gps_choice = $scope.gps_choices[i];
+            $rootScope.$watch('FormData.gps_precision', function(newValue, oldValue) {
+                for(var i in $scope.gps_precision_choices){
+                    if($scope.gps_precision_choices[i]["id"]==newValue){
+                        $scope.selected_gps_precision = $scope.gps_precision_choices[i];
                     }
                 }
             });

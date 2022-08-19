@@ -3772,6 +3772,7 @@ img.circle-border {
   background-color: #ffffff;
   padding: 0;
   margin-bottom: 0;
+  font-size: 11px;
 }
 .breadcrumb > li a {
   color: inherit;
@@ -8503,6 +8504,28 @@ div.error{
   background-color: {{ PRIMARY }};
 }
 /* ----- /Bootstrap radio/checkbox ----- */
+
+/* ------ Borders ------ */
+.border_primary{
+  border: solid 1px {{ PRIMARY }};
+}
+
+.border_success{
+  border: solid 1px #4eae4e;
+}
+
+.border_warning{
+  border: solid 1px #f8ac59;
+}
+
+.border_danger{
+  border: solid 1px #ed5565;
+}
+
+.border_info{
+  border: solid 1px #5bc0de;
+}
+/* ------ Borders ------ */
 
 /* ------ JqGrid & jQuery UI-------- */
 .ui-jqgrid-primary{

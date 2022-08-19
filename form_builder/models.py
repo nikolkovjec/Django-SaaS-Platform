@@ -5,8 +5,9 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.utils import timezone
 import tinymce.models as tinymce_models
-from django_mysql.models import Model, ListTextField
+from django_mysql import models as models57
 from django_extensions.db.fields.json import JSONField
 from django_extensions.db.fields import CreationDateTimeField, ModificationDateTimeField
 from colorful.fields import RGBColorField
@@ -18,14 +19,16 @@ from mongoengine.base.fields import BaseField
 
 from django.core.exceptions import ValidationError
 import uuid
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from django.template.defaultfilters import slugify
 from django.conf import settings
 import random
 from django.forms.models import model_to_dict
 
+from accounts.models import RegisteredUser
 from form_builder import form_schema
 from form_builder.form_exceptions import DuplicateVariableName, ExpressionCompileError
+from form_builder.utils import GeoLocation
 from languages.models import Language, Translation
 from utilities.timezone_utils import validate_timezone_offset_string
 
@@ -162,7 +165,7 @@ class ThemeSkin(models.Model):
 
 # ---------- Form ----------
 
-class Form(Model):
+class Form(models57.Model):
     """
     Model to define a form.
 
@@ -174,24 +177,24 @@ class Form(Model):
     user_notes      = tinymce_models.HTMLField(null=True, blank=True, help_text='Notes for use use only.')
 
     theme_skin      = models.ForeignKey(ThemeSkin, on_delete=models.PROTECT, help_text='Theme to be used for this form.')
-    languages       = models.ManyToManyField(Language, help_text='Languages that are available to the form. English is by default.')
+    languages       = models.ManyToManyField(Language, blank=True, help_text='Languages that are available to the form. English is by default.')
 
-    constants       = JSONField(null=True, blank=True, help_text='List of constants used in this form.')
-    schema          = JSONField(help_text='Form schema in json format.')
-    calculated_fields = JSONField(null=True, blank=True, help_text='List of fields whoes values are calculated dynamically in the form based on a expression. These are calculated in the order of declaration.')
+    constants       = JSONField(default=[], null=True, blank=True, help_text='List of constants used in this form.')
+    schema          = JSONField(default=[], blank=True, help_text='Form schema in json format.')
+    calculated_fields = JSONField(default=[], null=True, blank=True, help_text='List of fields whoes values are calculated dynamically in the form based on a expression. These are calculated in the order of declaration.')
 
     # Form settings
     timeout         = models.IntegerField(default=None, null=True, blank=True, help_text='Defines the number of seconds after which form expires.')
     show_timer      = models.BooleanField(default=False, help_text='In case \'timeout\' is set, this define whether to show timer or not.')
     randomize       = models.BooleanField(default=False, help_text='Randomize field order. ONLY applicable when there are no conditions.')
     gps_enabled     = models.BooleanField(default=True, help_text="Capture user location while filling form.")
-    gps_required    = models.BooleanField(default=False, help_text="If true, the gps location is madatory before form starts.")
-    gps_high_accuracy = models.BooleanField(default=True, help_text="If true, attempts to retrieve position using device gps otherwise, uses network-based methods.")
-    gps_max_radius  = models.IntegerField(null=True, blank=True, help_text='Max radius (in meters) that is acceptable for captured location.')
-    gps_max_age_allowed = models.IntegerField(default=10000, null=True, blank=True, help_text="Max age (in milliseconds) of GPS allowed to be used if capturing fails.")
+    gps_mandatory   = models.BooleanField(default=False, help_text="If true, the gps location is madatory before form starts.")
+    gps_precision   = models.CharField(max_length=16, choices=GeoLocation.choices, default=GeoLocation.FINE, help_text='GPS precision choice. This will automatically set gps config.')
+    gps_config      = models57.JSONField(default=None, blank=True, help_text='Gps configurations according to `gps_precision` choice resolved by :class:`form_builder.utils.GeoLocation`.')
 
     # Meta
-    translations    = ListTextField(base_field=models.CharField(max_length=128), null=False, blank=True, help_text="Comma seperated list of translations (languages.Translation) ids.")
+    translations    = models57.ListTextField(base_field=models.CharField(max_length=128), null=False, blank=True, help_text="Comma seperated list of translations (languages.Translation) ids.")
+    is_ready        = models.BooleanField(default=False, editable=False, help_text='Tells if form is ready to be executed. This is verified on the fact that schema is not empty or [].')
     version         = models.UUIDField(default=uuid.uuid4, db_index=True, help_text='Auto generated form version.')
     created_on      = CreationDateTimeField(db_index=True, help_text='Date on which this form was created.')
     updated_on      = ModificationDateTimeField(auto_now=False, null=True, blank=True, db_index=True, help_text='Date on which this form was last updated.')
@@ -287,24 +290,29 @@ class Form(Model):
         if constants:
             for const in constants:
                 push_list_varnames(str(const.label))
-                set_translation_ids.add(const.text_translation_id)
+                if const.text_translation_id is not None:
+                    set_translation_ids.add(const.text_translation_id)
 
         # (2) Parse schema JSON & obtain schema obj. This will check any schema errors.
         schema_obj = self.schema_obj
+        if schema_obj is not None and len(schema_obj) != 0:
+            # Check if randomization is allowed: There must be no component other than 'fields' if randomize is true
+            if self.randomize:
+                for comp in schema_obj:
+                    if not isinstance(comp, BasicFormField):
+                        raise ValidationError("You cannot use randomize since the form contains conditions & layouts.")
 
-        # Check if randomization is allowed: There must be no component other than 'fields' if randomize is true
-        if self.randomize:
-            for comp in schema_obj:
-                if not isinstance(comp, BasicFormField):
-                    raise ValidationError("You cannot use randomize since the form contains conditions & layouts.")
+            # Prepare field lookup for further use
+            lookupDict_fields = {}      # { "<label>": <Field Object>, "<label>":<Field Object>, ...}
+            for field in iterate_form_fields(schema_obj):
+                label = str(field.label)
+                push_list_varnames(label)
+                lookupDict_fields[label] = field
+                set_translation_ids.update(field.get_translation_ids())
 
-        # Prepare field lookup for further use
-        lookupDict_fields = {}      # { "<label>": <Field Object>, "<label>":<Field Object>, ...}
-        for field in iterate_form_fields(schema_obj):
-            label = str(field.label)
-            push_list_varnames(label)
-            lookupDict_fields[label] = field
-            set_translation_ids.update(field.get_translation_ids())
+                self.is_ready = True
+        else:
+            self.is_ready = False
 
         # (3) Parse calculated fields & obtains object form.
         # Check that all calculated fields are using only constants or mandatory form variables.
@@ -313,7 +321,8 @@ class Form(Model):
             for calcfld in calc_flds:
                 push_list_varnames(str(calcfld.label))
                 list_vars_in_expr = calcfld.get_expression_variables()
-                set_translation_ids.add(calcfld.text_translation_id)
+                if calcfld.text_translation_id is not None:
+                    set_translation_ids.add(calcfld.text_translation_id)
 
                 for absolute_var in list_vars_in_expr:
                     varname = absolute_var.replace("$scope.", "").replace("data.", "").replace("constants.", "")
@@ -364,6 +373,20 @@ class Form(Model):
                 data_dict[key] = val.isoformat()
         return data_dict
 
+    def get_formquestions(self, only_current=True):
+        """
+        Method to return form questions for this form.
+        :param only_current: If True, returns only those questions which are currently in the form.
+            Otherwise returns all questions including those which have been changed.
+        :return: List<:class:`form_builder.models.FormQuestion`>
+        """
+
+        if only_current:
+            qry = self.formquestion_set.filter(form_version=self.version)
+        else:
+            qry = self.formquestion_set.all()
+        return qry
+
 
     # --- Clean & Save ---
     def clean(self):
@@ -372,7 +395,8 @@ class Form(Model):
         self.translations = list_translation_ids
 
         # Gps Settings
-        if self.gps_enabled == False and self.gps_required == True:
+        self.gps_config = GeoLocation.config[self.gps_precision]
+        if self.gps_enabled == False and self.gps_mandatory == True:
             raise ValidationError("GPS must be enabled before it is marked as mandatory.")
 
         if self.id:
@@ -391,23 +415,89 @@ class Form(Model):
 
     @classmethod
     def post_save(cls, sender, instance, **kwargs):
-        for fld in iterate_form_fields(instance.schema_obj):
-            print "\tPushing :" , fld.label
-            FormFieldMetaData.objects(
-                form_id = str(instance.id),
-                label = fld.label,
-                field_class = fld._cls
-            ).update_one(
-                form_version = str(instance.version),
-                text_ref = fld.text_ref,
-                text_translation_id = fld.text_translation_id,
-                required = fld.required,
-                request_response = fld.request_response,
-                dated = datetime.now(),
-                upsert = True
-            )
+        schema_obj = instance.schema_obj
+        if schema_obj is not None and len(schema_obj) != 0:
+            for fld in iterate_form_fields(schema_obj):
+                print "\tPushing :" , fld.label
+                FormQuestion.objects.update_or_create(
+                    form_id = instance.id,
+                    label = fld.label,
+                    field_class = fld._cls,
+                    defaults = {
+                        "form_version": instance.version,
+                        "text_translation_id": fld.text_translation_id,
+                        "schema_json": fld.to_json(),
+                        "dated": timezone.now()
+                    }
+                )
+
+                # FormFieldMetaData.objects(
+                #     form_id = str(instance.id),
+                #     label = fld.label,
+                #     field_class = fld._cls
+                # ).update_one(
+                #     form_version = str(instance.version),
+                #     text_ref = fld.text_ref,
+                #     text_translation_id = fld.text_translation_id,
+                #     required = fld.required,
+                #     request_response = fld.request_response,
+                #     dated = datetime.now(),
+                #     upsert = True
+                # )
 post_save.connect(Form.post_save, sender=Form)
 
+class FormQuestion(models57.Model):
+    """
+    Model to store all form questions(fields) irrespective of order or conditions.
+    Thus, this model provides flat list of all fields used in the form.
+
+    Moreover, it also keeps a track of previous fields that have been either updated or removed.
+    But this model cannot be used as audit trail since, it overrides fields to latest configurations
+    if its label & data type class has not been changed.
+
+    **Uniqueness:**
+
+        ``form_id``, ``label``, ``field_class``
+
+    **Logic**:
+
+        - Before inserting new record, table it looked up form any previous record with
+          key consisting of (form_id, label, field_class).
+        - If found, this record is updated with new configurations settings.
+        - If not found, new entry is made. Old one automatically get obsolete as there
+          is new record with latest form_version.
+
+    **Points**:
+
+        - To obtains list of all fields currently present in the form, query with
+          key (``form_id``, ``form_version``)
+        - To obtains list of all fields that are or were in the form, query with
+          ``form_id``.
+
+    **Authors**: Gagandeep Singh
+    """
+
+    form        = models.ForeignKey(Form, db_index=True, help_text='Form to which this question field belongs to')
+    form_version = models.UUIDField(default=uuid.uuid4, db_index=True, help_text='Form version to which this version of field belongs.')
+    label       = models.CharField(max_length=255, help_text='Label of the form field.')
+    field_class = models.CharField(max_length=128, help_text='Field class of this question.  This must be exactly same as the field class name.')
+    text_translation_id = models.CharField(max_length=128, help_text="Raw id of text translation :class:`languages.models.Translation`.")
+    schema_json = models57.JSONField(help_text='Json schema of question field as per field class.')
+
+    dated       = models.DateTimeField(db_index=True, help_text='Date on which this record was created/updated.')
+
+    @property
+    def translation(self):
+        return Translation.objects.with_id(self.text_translation_id)
+
+    class Meta:
+        unique_together = ('form', 'label', 'field_class')
+        ordering = ['form', 'dated']
+
+    def __unicode__(self):
+        return "{}: {}".format(self.form_id, self.label)
+
+'''
 class FormFieldMetaData(Document):
     """
     This model maintains the basic information of fields used in a form.
@@ -422,7 +512,7 @@ class FormFieldMetaData(Document):
         - Before inserting new record, collection it looked up form any previous record with
           key consisting of (form_id, label, field_class).
         - If found, this record is updated with remaining information.
-        - If not found, new entry is made. Old one automatically get obselete as there is new
+        - If not found, new entry is made. Old one automatically get obsolete as there is new
           is new record with latest form_version.
 
     .. note::
@@ -463,7 +553,7 @@ class FormFieldMetaData(Document):
 
     def __unicode__(self):
         return "{}: {}".format(self.form_id, self.label)
-
+'''
 
 # ------------ Form Response -----------
 class BaseResponse(Document):
@@ -483,7 +573,7 @@ class BaseResponse(Document):
 
         **Authors**: Gagandeep Singh
         """
-        user_id         = StringField(help_text='Primary key of user.')
+        user_id         = StringField(help_text='Primary key of auth.models.user.')
         username        = StringField(help_text='User login username.')
         user_fullname   = StringField(help_text='User full name.')
 
@@ -507,6 +597,22 @@ class BaseResponse(Document):
         accuracy        = FloatField(required=True, help_text='Accuracy (in meters) at which GPS coordinates where captured.')
         timestamp       = LongField(help_text='Timestamp at which gps was taken.')
 
+    class SuspectReason(EmbeddedDocument):
+        """
+        Response embedded document to record reasons for suspected response.
+        **Authors**: Gagandeep Singh
+        """
+        TYPE_USER_DEFINED = 'user_defined'
+        CH_TYPE = (
+            (TYPE_USER_DEFINED, 'User defined'),
+        )
+
+        id      = StringField(required=True, help_text="GUID for this reason.")
+        type    = StringField(required=True, choices=CH_TYPE, help_text='Type of reason.')
+        text    = StringField(required=True, help_text="Text describing the reason")
+        user_id = StringField(help_text='Primary key of auth.models.user who marked this as suspicious. Empty if marked by the system.')
+
+
     class ResponseFlags(EmbeddedDocument):
         """
         Response embedded document to capture various types of flags related to the response.
@@ -515,8 +621,9 @@ class BaseResponse(Document):
         """
         description_read    = BooleanField(default=False, required=True, help_text='Determines if the description was read by the user')
         instructions_read   = BooleanField(default=False, required=True, help_text='Determines if the instructions were read by the user.')
-        suspect             = BooleanField(default=False, required=True, help_text='Determins if this reponse is a suspect. If true, reason must be specified.')
+        suspect             = BooleanField(default=False, required=True, help_text='Determines if this reponse is a suspect. If true, reason must be specified.')
         suspect_reasons     = ListField(help_text='List of reasons is to why this response is a suspect.')
+        has_ai              = BooleanField(default=False, help_text='If true, it means this response artifical intelligence applied.')
 
     class EndPointInformation(EmbeddedDocument):
         """
@@ -567,11 +674,52 @@ class BaseResponse(Document):
         Response embedded document to an answer to the question in details. This includes
         various meta information for an answer.
 
+        Specifications for ``ai`` field:
+
+            Structure:
+            {
+                "<algo_key>":{
+                    "pending": True/False,
+                    "result": {
+                        --- result json ---
+                    }
+                }
+            }
+
+            ** Points**:
+                - The structure is created during response creation after analyzing corresponding FormField.
+                - All process looks for its ``algo_key`` to check if this answer must be analyzed or not. This happens
+                  when the process gets a green light to proceed after checking in ``response.process_flags``.
+                - If ``algo_key.pending`` is true, it means answer is yet to be procceed, so process it.
+                  Otherwise, if false, it means answer must have already been processed.
+                - Results are store in ``algo_key.results`` mostly in form of json. Structure varies as per the algorithm result.
+
         **Authors**: Gagandeep Singh
         """
         question_label  = StringField(required=True, help_text='Label of the question to which this answer is related')
         answer          = BaseField(required=True, help_text='Answer to the question.')
         is_other        = BooleanField(required=True, default=False, help_text='If true, it means the answer of the question belongs to other part of the question.')
+        ai              = DictField(default=None, required=False, help_text='AI instructions and result.')
+
+        def __unicode__(self):
+            return self.question_label
+
+    class ProcessFlags(EmbeddedDocument):
+        """
+        Response embedded document to log pending process that are yet to be applied on this response.
+        Please note that this is not process logger. It simply specifies what process are still pending.
+        Each process search for its key and uses its value to decide whether it must be applied on this response
+        or not.
+
+        .. warning::
+            This document only contains pending process keys. When the process has been applied, it
+            removes its key from this document.
+
+        **Authors**: Gagandeep Singh
+        """
+        text_analysis   = BooleanField(default=None, required=False, help_text="Used by processes related to text analyzes. If true, it means 'text analysis' is still pending.")
+
+
 
     # --- /Embedded Documents ---
 
@@ -591,7 +739,7 @@ class BaseResponse(Document):
     constants       = DictField(help_text='Dictionary of all constants & their values as used in form.')
     answers         = DictField(required=True, help_text='Dictionary containing answer for questions asked in the form.')
     answers_other   = DictField(help_text='Dictionary containing answer for other option of the questions.')
-    list_answers    = EmbeddedDocumentListField(Answer, help_text="List of answers and other answer along with their meta details. These are indexed.")
+    list_answers    = EmbeddedDocumentListField(Answer, help_text="List of answers and other answer along with their meta details. These are indexed. These are populated by 'answers'.")
     calculated_fields = DictField(help_text='Dictionary of calculated fields as evaluated by the form.')
 
     # Time Dimension
@@ -604,8 +752,11 @@ class BaseResponse(Document):
     # Space Dimension
     location        = EmbeddedDocumentField(LocationInformation, help_text='Location related data.')
 
-    # Flags
+    # Metadata
     flags = EmbeddedDocumentField(ResponseFlags, required=True, help_text='Various information signalizing something related to this response.')
+
+    # Process
+    process_flags   = EmbeddedDocumentField(ProcessFlags, help_text='Flags containing logs for process that are yet to be applied.As the process get completed, key is marked false.')
 
     # Dates
     created_on      = DateTimeField(default=datetime.now, required=True, help_text='Date on which this record was created in the database.')
@@ -615,9 +766,9 @@ class BaseResponse(Document):
         'abstract': True,
         'indexes':[
             'form_id',
-            'version_obsolete',
+            # 'version_obsolete',
             'app_version',
-            'user.user_id',
+            # 'user.user_id',
             'user.username',
             'end_point_info.type',
             'response_uid',
@@ -625,19 +776,104 @@ class BaseResponse(Document):
             'list_answers.answer',
             'list_answers.is_other',
             'flags.suspect',
-            'timezone_offset',
+            # 'timezone_offset',
             '-response_date',
             '-created_on',
+            {
+                'fields': ['process_flags.text_analysis'],
+                'sparse': True,
+                'cls': False
+            }
         ]
     }
 
     def __unicode__(self):
         return "{} - {}".format(self.form_id, str(self.pk))
 
-    def save(self, deep_save=True, *args, **kwargs):
+    def get_respondent(self):
+        """
+        Method to get respondent that is, :class:`accounts.models.RegisteredUser` instance.
+
+        **Authors**: Gagandeep Singh
+        """
+        return RegisteredUser.objects.get(user__username=self.user.username)
+
+    def get_form(self):
+        """
+        Method to get form to which this response belongs to.
+        :return: Instance of :class:`form_builder.models.Form`
+        """
+        return Form.objects.get(id=self.form_id)
+
+    def get_duration_time(self):
+        """
+        Method to return duration in time format HH:MM:SS.
+
+        **Authors**: Gagandeep Singh
+        """
+        time_format = str(timedelta(seconds=self.duration)).split('.')[0]
+        return time_format
+
+    def get_answers_lookup(self):
+        """
+        Method to get answer lookup dictionary that contains each answer information in detail.
+        This uses ``response.list_answers`` to create lookup dict.
+        :return: Lookup dict for format: { "<label>": { <Answer embedded doc> } }
+        """
+
+        lookup_dict = {ans.question_label:ans for ans in self.list_answers}
+        return lookup_dict
+
+    def suspicion_add(self, type, text, user_id):
+        """
+        Method to add suspicion to this response.
+        :param type: Type of suspicion
+        :param text: text of suspicion
+        """
+
+        suspicion = BaseResponse.SuspectReason(
+            id =str(uuid.uuid4()),
+            type = type,
+            text = text,
+            user_id = str(user_id)
+        )
+        self.flags.suspect_reasons.append(suspicion)
+        self.flags.suspect = True
+        self.save()
+
+    def suspicion_remove(self, reason_id):
+        """
+        Method to remove a suspicion reason.
+
+        :param reason_id: Reason id to be removed
+        :return: True if successful, False if id not found
+
+        **Authors**: Gagandeep Singh
+        """
+
+        success = False
+        item = None
+        for idx, rsn in enumerate(self.flags.suspect_reasons):
+            if rsn.id == reason_id:
+                item = rsn
+                break
+
+        if item:
+            self.flags.suspect_reasons.remove(item)
+
+            if len(self.flags.suspect_reasons) == 0:
+                self.flags.suspect = False
+
+            self.save()
+
+            success = True
+
+        return success
+
+
+    def save(self, *args, **kwargs):
         """
         Save method for a response.
-        :param deep_save: If True, re-evaluates/update ``list_answers``.
 
         **Authors**: Gagandeep Singh
         """
@@ -653,11 +889,39 @@ class BaseResponse(Document):
         if self.flags.suspect and len(self.flags.suspect_reasons) == 0:
             raise Exception('Please specify atleast one reason is to why this response is a suspect.')
 
-        if deep_save:
+        if self.pk is None:
+            # Cache all current form questions
+            cache_curr_questions = {}
+            form = self.get_form()
+            for fq in form.get_formquestions(only_current=True): # Current questions
+                cache_curr_questions[fq.label] = fq
+            # Old questions must not be included since processing for them has now been turned off.
+            # if str(form.version) != self.form_version:
+            #     for fq in form.formquestion_set.filter(form_version=self.form_version): # Replace, as per this response form version
+            #         cache_curr_questions[fq.label] = fq
+
+            # Process flags
+            text_analysis = False
+
             list_answers = []
 
             # (a) Add answers to list_answers
             for ques_label,answer in self.answers.iteritems():
+                fq = cache_curr_questions.get(ques_label, None)  # None in case contants or calculated_fields were included in the answers
+
+                # Check all AI that are to be applied on this field.
+                # This is completely based on current questions only.
+                has_ai = False
+                if fq and fq.schema_json.get('ai_directives', None):
+                    ai = {}
+                    for algo_key, val in fq.schema_json['ai_directives'].iteritems():
+                        if val is True:
+                            ai[algo_key] = {
+                                "pending": True
+                            }
+                            has_ai = True
+                            text_analysis = True    # TODO: Check process type (text/image) before setting this
+
                 if isinstance(answer, list):
                     # Answer is an arra of value
                     list_values = answer
@@ -667,25 +931,39 @@ class BaseResponse(Document):
 
                 # Add separate entry for each value of the answer.
                 for ans in list_values:
-                    list_answers.append(
-                        BaseResponse.Answer(
-                            question_label = ques_label,
-                            answer = ans
-                        )
+                    answer_doc = BaseResponse.Answer(
+                        question_label = ques_label,
+                        answer = ans
                     )
+                    if has_ai:
+                        answer_doc.ai = ai
+
+                    list_answers.append(answer_doc)
 
             # (b) Add 'other' answers to list_answers
             for ques_label, ans in self.answers_other.iteritems():
-                list_answers.append(
-                    BaseResponse.Answer(
-                        question_label = ques_label,
-                        answer = ans,
-                        is_other = True
-                    )
+                answer_doc = BaseResponse.Answer(
+                    question_label = ques_label,
+                    answer = ans,
+                    is_other = True
                 )
+
+                if has_ai:
+                        answer_doc.ai = ai
+
+                list_answers.append(answer_doc)
 
             # Update variable
             self.list_answers = list_answers
+
+            # Set process flags
+            if text_analysis:
+                process_flags = BaseResponse.ProcessFlags(
+                    text_analysis = text_analysis
+                )
+                self.process_flags = process_flags
+
+                self.flags.has_ai = True
 
         return super(BaseResponse, self).save(*args, **kwargs)
 

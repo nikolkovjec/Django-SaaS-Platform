@@ -6,13 +6,16 @@ from django.shortcuts import render
 from django.db.models import Q
 from django.utils import timezone
 from django_fsm import TransitionNotAllowed
+from django.db import transaction
 
 import json
 from django.views.decorators.csrf import csrf_exempt
+from mongoengine.errors import DoesNotExist as DoesNotExist_mongo
 
 from surveys.models import Survey, SurveyPhase, SurveyCategory, SurveyResponse
 from surveys.decorators import *
-from languages.models import Language
+from languages.models import Language, Translation
+from form_builder.models import Form, iterate_form_fields
 from form_builder.utils import GeoLocation
 from accounts.models import RegisteredUser
 from utilities.decorators import registered_user_only
@@ -131,7 +134,7 @@ def submit_survey_response(request):
                     answers_other   = response_json['answers_other'],
                     calculated_fields = response_json['calculated_fields'],
 
-                    timezone_offset        = response_json['timezone_offset'],
+                    timezone_offset = response_json['timezone_offset'],
                     response_date   = timezone.datetime.strptime(response_json['response_date'],"%Y-%m-%dT%H:%M:%S"), # parse(response_json['response_date']),
                     start_time      = timezone.datetime.strptime(response_json['start_time'],"%Y-%m-%dT%H:%M:%S"), # parse(response_json['start_time']),
                     end_time        = timezone.datetime.strptime(response_json['end_time'],"%Y-%m-%dT%H:%M:%S"), # parse(response_json['end_time']),
@@ -180,7 +183,64 @@ def console_surveys(request):
     return render(request, 'surveys/console/surveys.html', data)
 
 @registered_user_only
-def console_survey_panel(request, survey_uid):
+def console_survey_new(request):
+    """
+    View to open form to create a survey.
+
+    **Type**: GET
+
+    **Authors**: Gagandeep Singh
+    """
+
+    reg_user = request.user.registereduser
+    data ={
+        'list_categories': SurveyCategory.objects.filter(active=True),
+        'app_name': 'app_survey_create'
+    }
+
+    return render(request, 'surveys/console/create_survey.html', data)
+
+@registered_user_only
+def console_survey_create(request):
+    """
+    API view to create new survey.
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+    # Current only for individual
+    reg_user = request.user.registereduser
+
+    if request.method.lower() == 'post':
+        try:
+            from surveys.forms import SurveyCreateForm
+            post_data = request.POST.copy()
+            post_data['type'] = Survey.TYPE_SIMPLE
+            post_data['surveyor_type'] = Survey.SURVYR_INDIVIDUAL
+
+            form_survey = SurveyCreateForm(post_data)
+
+            if form_survey.is_valid():
+                new_survey = form_survey.save(created_by=reg_user)
+                return ApiResponse(
+                    status=ApiResponse.ST_SUCCESS,
+                    message='Ok',
+                    survey_uid=new_survey.survey_uid,
+                    survey_type=new_survey.type
+                ).gen_http_response()
+            else:
+                errors = dict(form_survey.errors)
+                return ApiResponse(status=ApiResponse.ST_FAILED, message='Please correct marked errors.', errors=errors).gen_http_response()
+        except Survey.DoesNotExist:
+            return ApiResponse(status=ApiResponse.ST_UNAUTHORIZED, message='Invalid survey.').gen_http_response()
+    else:
+        # GET Forbidden
+        return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
+
+@registered_user_only
+@survey_access_firewall
+def console_survey_panel(request, survey):
     """
     View to open control panel for a survey.
 
@@ -193,11 +253,12 @@ def console_survey_panel(request, survey_uid):
     reg_user = request.user.registereduser
 
     try:
-        survey = Survey.objects.get(survey_uid=survey_uid, created_by_id=reg_user.id)
+        #survey = Survey.objects.get(survey_uid=survey_uid, created_by_id=reg_user.id)
 
         data ={
             'SURVEY': Survey,
             'survey': survey,
+            'has_gps_enabled': survey.has_gps_enabled(),
             'now': timezone.now(),
             'app_name': 'app_survey_panel',
             'list_categories': SurveyCategory.objects.filter(Q(active=True)|Q(id=survey.category_id)).only('id', 'name')
@@ -244,9 +305,13 @@ def console_survey_transit(request, survey):
         return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
 
 @registered_user_only
-def console_survey_save(request, survey_uid=None):
+@survey_access_firewall
+def console_survey_save(request, survey):
     """
-    API view to save survey information. If survey_uid is ``None``, it means create new survey.
+    API view to save survey information.
+
+    .. warning::
+        Do not use this view to create new survey.
 
     **Type**: POST
 
@@ -257,8 +322,6 @@ def console_survey_save(request, survey_uid=None):
 
     if request.method.lower() == 'post':
         try:
-            survey = Survey.objects.get(survey_uid=survey_uid, created_by_id=reg_user.id)
-
             from surveys.forms import SurveyEditForm
             form_survey = SurveyEditForm(request.POST, instance=survey)
 
@@ -277,7 +340,8 @@ def console_survey_save(request, survey_uid=None):
 
 
 @registered_user_only
-def console_survey_phase_form_editor(request, survey_uid, phase_id=None):
+@survey_access_firewall
+def console_survey_phase_form_editor(request, survey, phase_id=None):
     """
     View to open form editor for a survey phase.
 
@@ -295,14 +359,15 @@ def console_survey_phase_form_editor(request, survey_uid, phase_id=None):
     try:
         if phase_id is None:
             # Simple survey
-            survey = Survey.objects.get(type=Survey.TYPE_SIMPLE, survey_uid=survey_uid, created_by_id=reg_user.id)
+            # survey = Survey.objects.get(type=Survey.TYPE_SIMPLE, survey_uid=survey_uid, created_by_id=reg_user.id)
             phase = survey.surveyphase_set.all()[0]
         else:
             # Complex survey
-            survey = Survey.objects.get(survey_uid=survey_uid, created_by_id=reg_user.id)
+            # survey = Survey.objects.get(survey_uid=survey_uid, created_by_id=reg_user.id)
             phase = survey.surveyphase_set.get(id=int(phase_id))
 
         data ={
+            'TYPE': 'SURVEY',
             'survey': survey,
             'phase': phase,
             'form': phase.form,
@@ -317,4 +382,270 @@ def console_survey_phase_form_editor(request, survey_uid, phase_id=None):
         raise Http404("Invalid survey.")
     except SurveyPhase.DoesNotExist:
         raise Http404("Invalid survey phase.")
+
+@registered_user_only
+@survey_access_firewall
+def console_survey_phase_form_save(request, survey, phase_id):
+    """
+    API view to save survey form.
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+    if request.method.lower() == 'post':
+        try:
+            phase = survey.surveyphase_set.get(id=phase_id)
+
+            form = phase.form
+            form_data = json.loads(request.POST['form_data'])
+            translation = json.loads(request.POST['translations'])
+
+            with transaction.atomic():
+                schema_str = json.dumps(form_data.get('schema', []))
+
+                # --- Translation ---
+                lookup_trans_id = {}    # Lookup for UI id to actual db id
+                for tid, trans_data in translation.iteritems():
+                    if tid.startswith('NEW'):
+                        new_trans = Translation.objects.create(
+                            is_paragraph = trans_data.get('is_paragraph', False),
+                            sentence = trans_data['sentence'],
+                            translations = trans_data.get('translations', {})
+                        )
+                        lookup_trans_id[tid] = str(new_trans.pk)
+
+                        # Replace translationIDs in schema with db IDs
+                        schema_str = schema_str.replace(tid, str(new_trans.pk))
+                    else:
+                        lookup_trans_id[tid] = tid
+                        Translation.objects(
+                            id = tid
+                        ).update_one(
+                            set__is_paragraph = trans_data.get('is_paragraph', False),
+                            set__sentence = trans_data['sentence'],
+                            set__translations = trans_data.get('translations', {}),
+                            upsert=True
+                        )
+
+                # --- Form save ---
+                form.description = lookup_trans_id.get(form_data.get('description', None), None)
+                form.instructions = lookup_trans_id.get(form_data.get('instructions', None), None)
+                form.user_notes = form_data.get('user_notes', None)
+
+                # -- languages --
+                language_codes = form_data['language_codes']
+                if len(language_codes):
+                    list_langs = []
+                    for code in language_codes:
+                        lang = Language.objects.get(code=code)
+                        list_langs.append(lang)
+                    form.languages = list_langs
+                else:
+                    form.languages.remove()
+
+                # -- Constants --
+                constants_corrected =  form_data.get('constants', [])
+                for cons in constants_corrected:
+                    if cons.has_key('text_translation_id'):
+                        cons['text_translation_id'] = lookup_trans_id.get(cons['text_translation_id'], None)
+                form.constants = constants_corrected
+
+                # -- Schema --
+                schema_json = json.loads(schema_str)
+                form.schema = schema_json
+
+                # -- CalculatedFields --
+                calc_flds_corrected =  form_data.get('calculated_fields', [])
+                for calFld in calc_flds_corrected:
+                    if calFld.has_key('text_translation_id'):
+                        calFld['text_translation_id'] = lookup_trans_id.get(calFld['text_translation_id'], None)
+                form.calculated_fields = calc_flds_corrected
+
+                timeout = form_data.get('timeout', None)
+                if timeout == '':
+                    timeout = None
+                form.timeout = timeout
+                form.show_timer = form_data.get('show_timer', False)
+                form.randomize = form_data.get('randomize', False)
+                form.gps_enabled = form_data.get('gps_enabled', False)
+                form.gps_mandatory = form_data.get('gps_mandatory', False)
+                form.gps_precision = form_data.get('gps_precision', GeoLocation.FINE)
+
+                form.save()
+
+            return ApiResponse(status=ApiResponse.ST_SUCCESS, message='Ok', is_ready=True).gen_http_response()
+        except SurveyPhase.DoesNotExist:
+            return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Invalid/unauthorized access.').gen_http_response()
+    else:
+        # GET Forbidden
+        return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
+
+@registered_user_only
+@survey_access_firewall
+def console_survey_response(request, survey, response_uid):
+    """
+    Django view to view a response of the survey.
+
+    **Type**: GET
+
+    **Authors**: Gagandeep Singh
+    """
+    try:
+        response = SurveyResponse.objects.get(survey_uid=survey.survey_uid, response_uid=response_uid)
+        lookup_answers = response.get_answers_lookup() # Detailed answer data
+
+        # --- Create answer sheet JSON ---
+        answer_sheet = {}
+
+        # For every phase response
+        form = response.phase.form
+
+        lookup_translation = form.get_translation_lookup()
+        response_ans_done = []
+        answer_sheet[response.phase_id] = {
+            "answers":[],
+            "obsolete_answers": [],
+            "constants": [],
+            "calculated_fields":[]
+        }
+
+
+        # Set answers that are currently in the questionnaire
+        for node in iterate_form_fields(form.schema_obj):
+            data = {
+                "question_text": lookup_translation[node.text_translation_id].sentence,
+                "answer": response.answers.get(node.label, None)
+            }
+            other_answer = response.answers_other.get(node.label)
+            if other_answer:
+                data['other_answer'] = {
+                    "question_text": node.other_question, #lookup_translation[node.text_translation_id].sentence,
+                    "answer": other_answer
+                }
+            # AI
+            ans = lookup_answers.get(node.label, None)  # None because, schema might contain new question that was not earlier present
+            if ans and ans.ai:
+                data["ai"] = ans.ai
+
+            answer_sheet[response.phase_id]["answers"].append(data)
+            response_ans_done.append(node.label)
+
+        # Set answers that have been removed
+        for label in response.answers.iteritems():
+            if label not in response_ans_done:
+                try:
+                    node = form.get_formquestions(only_current=False).filter(label=label)[0]
+
+                    data = {
+                        "question_text": Translation.objects.get(pk=node.text_translation_id).sentence,
+                        "answer": response.answers.get(node.label, None)
+                    }
+                    other_answer = response.answers_other.get(node.label)
+                    if other_answer:
+                        data['other_answer'] = {
+                            "question_text": "Response for other option:",
+                            "answer": other_answer
+                        }
+                    # AI
+                    ans = lookup_answers.get(node.label, None)  # None because, schema might contain new question that was not earlier present
+                    if ans and ans.ai:
+                        data["ai"] = ans.ai
+
+                    answer_sheet[response.phase_id]["obsolete_answers"].append(data)
+                except IndexError:
+                    pass
+
+        # Set Constants
+        for const in form.constants_obj:
+            data = {
+                "question_text": lookup_translation[const.text_translation_id].sentence,
+                "answer": response.calculated_fields.get(const.label, None)
+            }
+            answer_sheet[response.phase_id]["constants"].append(data)
+
+        # Set calculated fields
+        for calcFld in form.calculated_fields_obj:
+            data = {
+                "question_text": lookup_translation[calcFld.text_translation_id].sentence,
+                "answer": response.calculated_fields.get(calcFld.label, None)
+            }
+            answer_sheet[response.phase_id]["calculated_fields"].append(data)
+
+
+        # --- /Create answer sheet JSON ---
+
+
+        data = {
+            "survey": survey,
+            "response": response,
+            "answer_sheet": answer_sheet,
+            "app_name": "app_survey_response"
+        }
+        return render(request, 'surveys/console/survey_response.html', data)
+    except DoesNotExist_mongo:
+        raise Http404("Invalid link.")
+
+
+@registered_user_only
+@survey_access_firewall
+def console_remove_response_suspicion(request, survey):
+    """
+    API view to remove suspicion reason from a response.
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+    if request.method.lower() == 'post':
+        try:
+            response_uid = request.POST['response_uid']
+            reason_id = request.POST['reason_id']
+
+            response = SurveyResponse.objects.get(survey_uid=survey.survey_uid, response_uid=response_uid)
+
+            success = response.suspicion_remove(reason_id)
+            if not success:
+                raise IndexError('Invalid reason id.')
+
+            return ApiResponse(status=ApiResponse.ST_SUCCESS, message='Ok').gen_http_response()
+        except KeyError:
+            return ApiResponse(status=ApiResponse.ST_BAD_REQUEST, message='Missing parameters.').gen_http_response()
+        except (DoesNotExist_mongo, IndexError, ValueError):
+            return ApiResponse(status=ApiResponse.ST_UNAUTHORIZED, message='Invalid parameters.').gen_http_response()
+    else:
+        # GET Forbidden
+        return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
+
+@registered_user_only
+@survey_access_firewall
+def console_add_response_suspicion(request, survey):
+    """
+    API view to add suspicion reason from a response.
+
+    **Type**: POST
+
+    **Authors**: Gagandeep Singh
+    """
+    if request.method.lower() == 'post':
+        try:
+            response_uid = request.POST['response_uid']
+            text = request.POST['text']
+
+            response = SurveyResponse.objects.get(survey_uid=survey.survey_uid, response_uid=response_uid)
+
+            response.suspicion_add(
+                type = SurveyResponse.SuspectReason.TYPE_USER_DEFINED,
+                text = text,
+                user_id = request.user.id
+            )
+
+            return ApiResponse(status=ApiResponse.ST_SUCCESS, message='Ok').gen_http_response()
+        except KeyError:
+            return ApiResponse(status=ApiResponse.ST_BAD_REQUEST, message='Missing parameters.').gen_http_response()
+        except (DoesNotExist_mongo, IndexError, ValueError):
+            return ApiResponse(status=ApiResponse.ST_UNAUTHORIZED, message='Invalid parameters.').gen_http_response()
+    else:
+        # GET Forbidden
+        return ApiResponse(status=ApiResponse.ST_FORBIDDEN, message='Use post.').gen_http_response()
 # ==================== /Console ====================

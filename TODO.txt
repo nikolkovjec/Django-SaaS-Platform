@@ -8,14 +8,18 @@
     - Mobile/Desktop client check (django-mobile)
     - New Feature Promotion
 
-
 - UI
     - Summernote css
     - Report Display view
     - Suggestions Display view
 
+- Market
+    - BSP
+        - Purpose of visit
+
 - Survey
-    - Create: survey title already existing survey options
+    - Create: survey title already existing - autocomplete type options
+    - API - Access authentication
 
 - All models
     - If CharField/TextField 'default=None' as well
@@ -33,9 +37,6 @@
 
 - Logo
 - SMS Gateway service classes
-
-- Form marriage
-
 
 ------------- Low priority --------------
 

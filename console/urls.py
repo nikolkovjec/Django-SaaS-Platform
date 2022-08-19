@@ -33,17 +33,27 @@ url_brands = [
 ]
 
 api_survey_responses = api_surveys.SurveyResponsesAPI()
+api_survey_response_trend = api_surveys.SurveyResponseTrendAPI()
 url_surveys = [
     url(r'^$', views_surveys.console_surveys, name='console_surveys'),
+    url(r'^new/$', views_surveys.console_survey_new, name='console_survey_new'),
+    url(r'^create/$', views_surveys.console_survey_create, name='console_survey_create'),
+
     url(r'^(?P<survey_uid>\w+)/$', views_surveys.console_survey_panel, name='console_survey_panel'),
     url(r'^(?P<survey_uid>\w+)/save/$', views_surveys.console_survey_save, name='console_survey_save'),
     url(r'^(?P<survey_uid>\w+)/transit/$', views_surveys.console_survey_transit, name='console_survey_transit'),
 
     url(r'^(?P<survey_uid>\w+)/edit/$', views_surveys.console_survey_phase_form_editor, name='console_survey_simple_form_editor'),
     url(r'^(?P<survey_uid>\w+)/edit/(?P<phase_id>[0-9]+)/$', views_surveys.console_survey_phase_form_editor, name='console_survey_phase_form_editor'),
+    url(r'^(?P<survey_uid>\w+)/(?P<phase_id>[0-9]+)/save/$', views_surveys.console_survey_phase_form_save, name='console_survey_phase_form_save'),
+
+    url(r'^(?P<survey_uid>\w+)/response/(?P<response_uid>.*)/$', views_surveys.console_survey_response, name='console_survey_response'),
+    url(r'^response/suspicion/remove/$', views_surveys.console_remove_response_suspicion, name='console_survey_remove_response_suspicion'),
+    url(r'^response/suspicion/add/$', views_surveys.console_add_response_suspicion, name='console_survey_add_response_suspicion'),
 
     # Api
     url(r'^api/', include(api_survey_responses.urls)),
+    url(r'^api/', include(api_survey_response_trend.urls)),
 ]
 
 urlpatterns = [
